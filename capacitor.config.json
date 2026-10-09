@@ -1,0 +1,9 @@
+{
+  "appId": "com.cabbazar.cabapp",
+  "appName": "U & I Cabs",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
+}

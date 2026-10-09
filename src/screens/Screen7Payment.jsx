@@ -306,7 +306,7 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
         key: keyId,
         amount: orderData.amount, // in paise
         currency: orderData.currency || 'INR',
-        name: 'CABZO Outstation',
+        name: 'U & I Cabs Outstation',
         description: `Advance for ${pickupName} to ${dropName}`,
         image: 'https://cdn-icons-png.flaticon.com/512/3063/3063823.png',
         order_id: orderId,
@@ -817,7 +817,7 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             setUpiApp(app.id);
-                            window.location.href = `upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`;
+                            window.location.href = `upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=U%20%26%20I%20Cabs%20Advance%20Booking`;
                           }}
                           className={`p-2 rounded-xl border text-center text-[10px] font-black transition cursor-pointer flex flex-col items-center justify-center gap-1 ${
                             upiApp === app.id 
@@ -831,7 +831,7 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
                       ))}
                     </div>
                     <a
-                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`}
+                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=U%20%26%20I%20Cabs%20Advance%20Booking`}
                       onClick={(e) => e.stopPropagation()}
                       className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm text-center block"
                     >
@@ -892,7 +892,7 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
 
                     {/* Mobile Quick Intent link */}
                     <a
-                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`}
+                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=U%20%26%20I%20Cabs%20Advance%20Booking`}
                       onClick={(e) => e.stopPropagation()}
                       className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm text-center block"
                     >

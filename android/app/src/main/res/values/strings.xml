@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">U &amp; I Cabs</string>
+    <string name="title_activity_main">U &amp; I Cabs</string>
+    <string name="package_name">com.cabbazar.cabapp</string>
+    <string name="custom_url_scheme">com.cabbazar.cabapp</string>
+</resources>

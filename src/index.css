@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Custom scrollbar for mobile screens */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s infinite ease-in-out;
+}
+
+@keyframes cab-drive-in {
+  0% { transform: translateX(-35px); opacity: 0; }
+  65% { transform: translateX(6px); opacity: 1; }
+  100% { transform: translateX(0px); opacity: 1; }
+}
+
+.animate-cab-drive {
+  animation: cab-drive-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes road-line {
+  0% { background-position: 0 0; }
+  100% { background-position: 30px 0; }
+}
+
+.animate-road-line {
+  background: repeating-linear-gradient(90deg, #ea580c 0, #ea580c 10px, transparent 10px, transparent 20px);
+  background-size: 30px 2px;
+  animation: road-line 1.2s linear infinite;
+}
+
+/* Ensure Leaflet map tiles never bleed above UI dialogs and search suggestions */
+.leaflet-container {
+  z-index: 1 !important;
+}
+.leaflet-pane {
+  z-index: 2 !important;
+}
+.leaflet-top, .leaflet-bottom {
+  z-index: 3 !important;
+}
+
+/* ── Clean Light Theme & Input Contrast ── */
+input, select, textarea {
+  color: #0f172a;
+}
+input::placeholder, select::placeholder, textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Date and time picker styling: natural clean light scheme */
+input[type="date"], input[type="time"] {
+  color-scheme: light;
+  color: #0f172a;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  opacity: 0.85;
+  cursor: pointer;
+}
+
+/* ── Global Dark Mode Styling ── */
+html.dark,
+html.dark body,
+html.dark #root,
+html.dark main {
+  background-color: #020617;
+  color: #f8fafc;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #020617 !important;
+  color: #f8fafc;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #090d16 !important;
+}
+
+html.dark .bg-white {
+  background-color: #0f172a !important;
+  color: #f8fafc;
+}
+
+html.dark .bg-white\/95 {
+  background-color: rgba(15, 23, 42, 0.95) !important;
+  color: #f8fafc;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-slate-100 {
+  border-color: #1e293b !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+html.dark input, 
+html.dark select, 
+html.dark textarea {
+  background-color: #1e293b;
+  color: #f8fafc;
+  border-color: #334155;
+}
+
+html.dark input[type="date"], 
+html.dark input[type="time"] {
+  color-scheme: dark;
+  color: #f8fafc;
+}
+

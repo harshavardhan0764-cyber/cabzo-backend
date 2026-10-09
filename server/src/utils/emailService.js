@@ -571,12 +571,12 @@ function buildRegistrationOtpEmailHtml(email, otp, name) {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Verify Your Email - CabBazar</title>
+  <title>Verify Your Email - U &amp; I Cabs</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
     .container { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
     .header { background: linear-gradient(135deg, #ea580c 0%, #f97316 50%, #f59e0b 100%); padding: 32px 24px; text-align: center; color: #ffffff; }
-    .header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
     .header p { margin: 6px 0 0; opacity: 0.94; font-size: 13px; font-weight: 500; }
     .content { padding: 28px 24px; }
     .otp-box { background: #fff7ed; border: 2px dashed #f97316; border-radius: 16px; padding: 20px; text-align: center; margin: 24px 0; }
@@ -589,13 +589,13 @@ function buildRegistrationOtpEmailHtml(email, otp, name) {
 <body>
   <div class="container">
     <div class="header">
-      <h1>CABZO</h1>
+      <h1>U &amp; I Cabs</h1>
       <p>Secure Account Verification</p>
     </div>
     <div class="content">
       <p style="font-size: 14px; margin-top: 0;">Hi <strong>${recipientName}</strong>,</p>
       <p style="font-size: 13px; color: #475569; line-height: 1.6;">
-        Welcome to CABZO! Please use the following 6-digit verification code to complete your registration:
+        Welcome to <strong>U &amp; I Cabs</strong>! Please use the following 6-digit verification code to complete your registration:
       </p>
 
       <div class="otp-box">
@@ -610,7 +610,7 @@ function buildRegistrationOtpEmailHtml(email, otp, name) {
       </div>
     </div>
     <div class="footer">
-      <p style="margin: 0 0 4px;">CABZO 24x7 Customer Support: <strong>outstationcabsb@gmail.com</strong></p>
+      <p style="margin: 0 0 4px;">U &amp; I Cabs 24x7 Helpline: <strong>+91 83107 54133</strong> • outstationcabsb@gmail.com</p>
       <p style="margin: 0;">Your Ride, Your Way</p>
     </div>
   </div>
@@ -626,14 +626,14 @@ async function sendRegistrationOtpEmail(email, otp, name) {
   if (!email || !otp) return { success: false, error: 'Missing email or otp' };
 
   const fromEmail = process.env.FROM_EMAIL || 'outstationcabsb@gmail.com';
-  const subject = `Your CABZO verification code: ${otp}`;
+  const subject = `Your U & I Cabs verification code: ${otp}`;
   const htmlContent = buildRegistrationOtpEmailHtml(email, otp, name);
   const textContent = `
-CABZO Email Verification
+U & I Cabs Email Verification
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Hi ${name || 'Customer'},
 
-Your One-Time Password (OTP) to complete registration and verify your CABZO account is:
+Your One-Time Password (OTP) to complete registration and verify your U & I Cabs account is:
 
       ${otp}
 
@@ -641,13 +641,14 @@ This code is valid for 10 minutes.
 Do not share this OTP with anyone.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CABZO Support: outstationcabsb@gmail.com
+24/7 Helpline: +91 83107 54133
+Email: outstationcabsb@gmail.com
 `;
 
   try {
     const transporter = await getTransporter();
     const mailOptions = {
-      from: getCleanFromHeader('CABZO'),
+      from: getCleanFromHeader('U & I Cabs'),
       to: email,
       subject,
       text: textContent,

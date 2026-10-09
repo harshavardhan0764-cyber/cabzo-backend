@@ -1,0 +1,27 @@
+{
+  "short_name": "U & I Cabs",
+  "name": "U & I Cabs - Your Ride, Your Way",
+  "description": "U & I Cabs: Your Ride, Your Way - Premium Inter-City and Outstation Cab Services",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0b132b",
+  "theme_color": "#f59e0b",
+  "display": "standalone",
+  "orientation": "portrait"
+}

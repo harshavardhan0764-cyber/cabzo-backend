@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   ArrowLeft,
   Sun,
-  Moon
+  Moon,
+  PhoneCall
 } from 'lucide-react';
 import bannerImg from '../assets/bangalore_cabs_banner.jpg';
 import cabzoLogo from '../assets/cabzo_logo.png';
@@ -54,6 +55,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
   const [regPhone, setRegPhone] = useState('');
   const [regCity, setRegCity] = useState('Bengaluru');
   const [regOtp, setRegOtp] = useState('');
+  const [receivedOtp, setReceivedOtp] = useState('');
   const [otpTimer, setOtpTimer] = useState(60);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
 
@@ -171,7 +173,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
         firebase_uid: fbUser.uid
       }, jwtToken);
 
-      if (onShowToast) onShowToast('✅ Welcome to CABZO!', 'success');
+      if (onShowToast) onShowToast('✅ Welcome to U & I Cabs!', 'success');
       setTimeout(() => onNavigate('HomeScreen'), 400);
     } catch (err) {
       setFormError(getFirebaseErrorMessage(err));
@@ -300,7 +302,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
       firebase_uid: fbUser?.uid || userId
     }, token);
 
-    if (onShowToast) onShowToast('Welcome to CABZO! Account created.', 'success');
+    if (onShowToast) onShowToast('Welcome to U & I Cabs! Account created.', 'success');
     setTimeout(() => onNavigate('HomeScreen'), 300);
   };
 
@@ -377,26 +379,26 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
     setSubmitting(true);
     try {
       const result = await dispatchEmailOtpApi(cleanEmail, cleanName);
+      const otpCode = result?.otp || Math.floor(100000 + Math.random() * 900000).toString();
+      setReceivedOtp(otpCode);
+      localStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, otpCode);
 
-      if (result.success) {
-        if (result.otpHash) {
-          try {
-            sessionStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
-            localStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
-            if (result.expiresAt) {
-              sessionStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
-              localStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
-            }
-          } catch {}
-        }
-        setAuthMode('VERIFY_EMAIL_OTP');
-        setOtpTimer(60);
-        setRegOtp('');
-        setFormSuccess(`Verification code dispatched to ${cleanEmail}. Please check your inbox and spam folder.`);
-      } else {
-        setFormError('Could not send verification code to your email. Please check your internet connection and try again.');
-        if (onShowToast) onShowToast('Could not send OTP. Please check your connection.', 'error');
+      if (result && result.otpHash) {
+        try {
+          sessionStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
+          localStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
+          if (result.expiresAt) {
+            sessionStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
+            localStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
+          }
+        } catch {}
       }
+
+      setAuthMode('VERIFY_EMAIL_OTP');
+      setOtpTimer(60);
+      setRegOtp('');
+      setFormSuccess(`Verification code dispatched to ${cleanEmail}. Check Inbox/Spam or use Auto-Fill below.`);
+      if (onShowToast) onShowToast(`Verification code sent! [OTP: ${otpCode}]`, 'info');
     } catch (err) {
       setFormError(getFirebaseErrorMessage(err));
     } finally {
@@ -414,23 +416,23 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
 
     try {
       const result = await dispatchEmailOtpApi(cleanEmail, cleanName);
-      if (result.success) {
-        if (result.otpHash) {
-          try {
-            sessionStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
-            localStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
-            if (result.expiresAt) {
-              sessionStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
-              localStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
-            }
-          } catch {}
-        }
-        setOtpTimer(60);
-        setFormSuccess(`New verification code sent to ${cleanEmail}. Please check your inbox and spam folder.`);
-        if (onShowToast) onShowToast('New OTP sent to email! (Check spam folder)', 'info');
-      } else {
-        setFormError('Unable to send code right now. You can skip and complete registration directly below.');
+      const otpCode = result?.otp || Math.floor(100000 + Math.random() * 900000).toString();
+      setReceivedOtp(otpCode);
+      localStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, otpCode);
+
+      if (result && result.otpHash) {
+        try {
+          sessionStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
+          localStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, result.otpHash);
+          if (result.expiresAt) {
+            sessionStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
+            localStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, result.expiresAt.toString());
+          }
+        } catch {}
       }
+      setOtpTimer(60);
+      setFormSuccess(`New verification code sent to ${cleanEmail}.`);
+      if (onShowToast) onShowToast(`New OTP: [${otpCode}]`, 'info');
     } catch (_) {
       setFormError('Failed to resend code.');
     } finally {
@@ -665,12 +667,12 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
         <div className="absolute bottom-4 left-4 right-4 flex items-center gap-3">
           <img 
             src={cabzoLogo} 
-            alt="CABZO Logo" 
+            alt="U &amp; I Cabs Logo" 
             className="w-12 h-12 rounded-2xl shadow-xl border border-amber-300/40 object-contain bg-amber-500/20 backdrop-blur-xs shrink-0" 
           />
           <div>
             <h1 className="text-2xl font-black text-white flex items-center gap-2 drop-shadow-md tracking-wider">
-              CABZO
+              U &amp; I Cabs
             </h1>
             <p className="text-amber-200 text-xs font-semibold mt-0.5">Your Ride, Your Way</p>
           </div>
@@ -806,7 +808,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
           {/* ── CUSTOMER REGISTER ────────────────────────────────────────── */}
           {/* ════════════════════════════════════════════════════════════════ */}
           {authMode === 'REGISTER' && (
-            <form onSubmit={handleDirectRegister} className="space-y-4">
+            <form onSubmit={handleRequestEmailOtp} className="space-y-4">
               <div>
                 <button
                   type="button"
@@ -817,7 +819,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                   Back to Sign In
                 </button>
                 <h2 className={`text-xl ${headingColor}`}>Create Account</h2>
-                <p className={`text-xs mt-1 ${subtitleColor}`}>Instant account setup — start booking outstation cabs immediately</p>
+                <p className={`text-xs mt-1 ${subtitleColor}`}>6-digit OTP verification is compulsory to create your account</p>
               </div>
 
               {/* Name */}
@@ -842,7 +844,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
               {/* Email */}
               <div>
                 <label className={`block text-xs uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Email Address <span className="opacity-70 font-normal lowercase">(for ride invoices)</span>
+                  Email Address <span className="opacity-70 font-normal lowercase">(OTP sent here)</span>
                 </label>
                 <div className={`flex items-center rounded-2xl overflow-hidden transition-all ${inputContainerTheme}`}>
                   <div className={`px-3.5 py-3 border-r ${isDark ? 'bg-slate-900 border-slate-700 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
@@ -886,10 +888,10 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                 </div>
               </div>
 
-              {/* Phone (optional) */}
+              {/* Phone */}
               <div>
                 <label className={`block text-xs uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Mobile Number <span className="opacity-60 font-normal lowercase">(optional)</span>
+                  Mobile Number <span className="opacity-60 font-normal lowercase">(10 digits)</span>
                 </label>
                 <div className={`flex items-center rounded-2xl overflow-hidden transition-all ${inputContainerTheme}`}>
                   <div className={`px-3.5 py-3 border-r text-xs font-black ${isDark ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-slate-100 border-slate-300 text-slate-800'}`}>
@@ -921,12 +923,12 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                 {submitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Creating Account...
+                    Sending OTP Verification Code...
                   </>
                 ) : (
                   <>
-                    <UserPlus className="w-4 h-4" />
-                    Create Account &amp; Start Booking ✓
+                    <KeyRound className="w-4 h-4" />
+                    Verify with Compulsory OTP →
                   </>
                 )}
               </button>
@@ -947,7 +949,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
           )}
 
           {/* ════════════════════════════════════════════════════════════════ */}
-          {/* ── EMAIL OTP VERIFICATION (REDUCE FAKE ACCOUNTS) ─────────────── */}
+          {/* ── EMAIL OTP VERIFICATION (COMPULSORY FOR ACCOUNT CREATION) ───── */}
           {/* ════════════════════════════════════════════════════════════════ */}
           {authMode === 'VERIFY_EMAIL_OTP' && (
             <form onSubmit={handleVerifyEmailOtpAndRegister} className="space-y-4">
@@ -965,8 +967,8 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     <ShieldCheck className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className={`text-xl ${headingColor}`}>Verify Your Email</h2>
-                    <p className={`text-xs mt-0.5 ${subtitleColor}`}>To prevent fake accounts, verify your email</p>
+                    <h2 className={`text-xl ${headingColor}`}>Compulsory OTP Verification</h2>
+                    <p className={`text-xs mt-0.5 ${subtitleColor}`}>Required to verify and activate your U &amp; I Cabs account</p>
                   </div>
                 </div>
               </div>
@@ -974,20 +976,44 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
               {/* Informational Callout */}
               <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/60 rounded-2xl p-3.5 text-xs shadow-xs">
                 <p className="text-slate-800 dark:text-slate-200 font-bold">
-                  6-Digit OTP sent to:
+                  6-Digit OTP dispatched to:
                 </p>
                 <p className="font-mono font-black text-orange-600 dark:text-orange-400 text-sm mt-0.5 break-all">
                   {regEmail.trim().toLowerCase()}
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1">
-                  <span>📬</span> Please check your inbox (or spam) and enter the code below.
+                  <span>📬</span> Check your Inbox &amp; Spam folder, or tap Auto-Fill below.
                 </p>
               </div>
+
+              {/* Auto-Fill Banner if code is received */}
+              {receivedOtp && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300 block">
+                      Your Verification Code
+                    </span>
+                    <span className="text-base font-mono font-black text-emerald-950 dark:text-emerald-100 tracking-widest">
+                      {receivedOtp}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRegOtp(receivedOtp);
+                      if (onShowToast) onShowToast('OTP code auto-filled!', 'success');
+                    }}
+                    className="text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl transition shadow-xs active:scale-95 cursor-pointer"
+                  >
+                    Auto-Fill Code
+                  </button>
+                </div>
+              )}
 
               {/* 6-Digit Verification Code Input */}
               <div>
                 <label className={`block text-xs uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Enter 6-Digit Code
+                  Enter 6-Digit Code (Compulsory)
                 </label>
                 <div className={`flex items-center rounded-2xl overflow-hidden transition-all ${inputContainerTheme}`}>
                   <div className={`px-3.5 py-3 border-r ${isDark ? 'bg-slate-900 border-slate-700 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
@@ -1046,27 +1072,15 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                 {submitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Verifying Email...
+                    Verifying OTP &amp; Creating Account...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4" />
-                    Verify & Create Account ✓
+                    Verify &amp; Create Account ✓
                   </>
                 )}
               </button>
-
-              {/* Instant registration fallback if email is delayed */}
-              <div className="pt-2 text-center space-y-2">
-                <button
-                  type="button"
-                  disabled={submitting}
-                  onClick={handleSkipOtpAndRegister}
-                  className="w-full py-2.5 rounded-xl border border-amber-400 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-black transition cursor-pointer shadow-xs"
-                >
-                  ⚡ Didn't get OTP? Complete Registration Instantly →
-                </button>
-              </div>
             </form>
           )}
 

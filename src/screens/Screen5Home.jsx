@@ -267,7 +267,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
       if (onShowToast) onShowToast('Detecting GPS location...', 'info');
       const gpsPlace = await getCurrentDeviceLocationGoogle();
       if (!isBengaluruLocation(gpsPlace)) {
-        if (onShowToast) onShowToast('CABZO pickups are currently available exclusively from Bengaluru (Bangalore).', 'warning');
+        if (onShowToast) onShowToast('U & I Cabs pickups are currently available exclusively from Bengaluru (Bangalore).', 'warning');
         return;
       }
       updateBookingForm({
@@ -438,13 +438,13 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
           <div className="flex items-center gap-2">
             <img 
               src={cabzoLogo} 
-              alt="CABZO" 
+              alt="U & I Cabs" 
               className="w-9 h-9 rounded-2xl object-contain shadow-xs border border-orange-500/30 shrink-0" 
             />
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-base text-orange-500 tracking-wider">
-                  CABZO
+                  U &amp; I Cabs
                 </span>
                 <span className="text-[9px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.2 rounded-full font-black uppercase tracking-wider">
                   Outstation
@@ -1438,7 +1438,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
         <div className="space-y-2.5">
           <div className="px-1">
             <h3 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Why Choose CABZO
+              Why Choose U &amp; I Cabs
             </h3>
             <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Your Ride, Your Way • Safe & Guaranteed Outstation Travel</p>
           </div>
@@ -1488,7 +1488,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
               </div>
               <div>
                 <h4 className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>24/7 Helpline</h4>
-                <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Live trip assistance throughout</p>
+                <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Call / WhatsApp: 8310754133</p>
               </div>
             </div>
           </div>
@@ -1534,7 +1534,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
           <div className={`p-3.5 rounded-3xl border text-center shadow-xs ${
             isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-2 border-slate-200'
           }`}>
-            <p className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Book your first outstation ride with CABZO</p>
+            <p className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Book your first outstation ride with U &amp; I Cabs</p>
             <p className={`text-[10px] mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Your Ride, Your Way • Guaranteed cabs with transparent fares</p>
           </div>
         )}

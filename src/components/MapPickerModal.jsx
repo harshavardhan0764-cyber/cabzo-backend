@@ -156,7 +156,7 @@ export default function MapPickerModal({
 
       // Enforce Bengaluru pickup only
       if (isPickup && !isBengaluruLocation(detailed)) {
-        setErrorMessage('CABZO pickup services are exclusively available from Bengaluru (Bangalore). Please select a pickup location within Bengaluru.');
+        setErrorMessage('U & I Cabs pickup services are exclusively available from Bengaluru (Bangalore). Please select a pickup location within Bengaluru.');
         setSearching(false);
         return;
       }

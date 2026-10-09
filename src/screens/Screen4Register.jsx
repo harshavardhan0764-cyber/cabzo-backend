@@ -178,7 +178,7 @@ export default function Screen4Register({ params, onNavigate, onShowToast }) {
         city: city.trim()
       });
 
-      if (onShowToast) onShowToast('✅ Profile created successfully! Welcome to CABZO.', 'success');
+      if (onShowToast) onShowToast('✅ Profile created successfully! Welcome to U & I Cabs.', 'success');
       onNavigate('HomeScreen');
     } catch (err) {
       setErrorMessage(err.message || 'Verification failed. Please try again.');
