@@ -58,16 +58,69 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
   const [otpTimer, setOtpTimer] = useState(60);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
 
-  // Always ensure login and registration fields start completely empty for every user
-  React.useEffect(() => {
+  // ─── PURGE ALL STORED DATA (Email, Password, Tokens, Sessions) ──────────────
+  const purgeAllStoredAuthData = () => {
     try {
-      localStorage.removeItem('CabApp_SavedEmail');
-    } catch {}
+      const keysToRemove = [
+        'CabApp_SavedEmail',
+        'CabApp_CustomerEmail',
+        'CabApp_User',
+        'user',
+        'CabApp_Token',
+        'token',
+        'CabApp_UserPhone',
+        'CabApp_LoggedIn',
+        'CabApp_Admin_LoggedIn',
+        'CabApp_LastSessionPhone',
+        'CabApp_SavedPassword'
+      ];
+      keysToRemove.forEach(k => {
+        try { localStorage.removeItem(k); } catch (_) {}
+      });
+
+      // Clear all cached OTP hashes or local session items
+      try {
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('CabApp_OtpHash_') || k.startsWith('CabApp_OtpExpires_') || k.startsWith('CabApp_Local_OTP_') || k.toLowerCase().includes('lharsha')) {
+            localStorage.removeItem(k);
+          }
+        });
+      } catch (_) {}
+      try {
+        Object.keys(sessionStorage).forEach(k => {
+          if (k.startsWith('CabApp_OtpHash_') || k.startsWith('CabApp_OtpExpires_') || k.startsWith('CabApp_Local_OTP_') || k.toLowerCase().includes('lharsha')) {
+            sessionStorage.removeItem(k);
+          }
+        });
+      } catch (_) {}
+
+      // Inform cloud backend to clear memory and file OTP caches
+      const clearUrls = getCandidateApiUrls('/auth/clear-stored-data');
+      clearUrls.forEach(url => {
+        fetch(url, { method: 'POST' }).catch(() => {});
+      });
+    } catch (_) {}
+
     setLoginEmail('');
     setLoginPassword('');
     setRegEmail('');
+    setRegPassword('');
+    setRegName('');
+    setRegPhone('');
     setResetEmail('');
+    setFormError('');
+    setFormSuccess('');
+  };
+
+  // Always ensure login and registration fields start completely empty for every user
+  React.useEffect(() => {
+    purgeAllStoredAuthData();
   }, []);
+
+  const switchAuthMode = (newMode) => {
+    purgeAllStoredAuthData();
+    setAuthMode(newMode);
+  };
 
   // Email OTP countdown timer
   React.useEffect(() => {
@@ -732,8 +785,11 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
-                    autoComplete="email"
-                    autoFocus
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -752,7 +808,11 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
-                    autoComplete="current-password"
+                    autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    data-lpignore="true"
                     required
                   />
                   <button
@@ -769,7 +829,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
               <div className="text-right">
                 <button
                   type="button"
-                  onClick={() => { setAuthMode('FORGOT_PASSWORD'); setFormError(''); setFormSuccess(''); setResetSent(false); }}
+                  onClick={() => switchAuthMode('FORGOT_PASSWORD')}
                   className="text-xs font-black text-amber-600 hover:text-amber-700 underline underline-offset-2"
                 >
                   Forgot Password?
@@ -805,7 +865,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                   Don't have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => { setAuthMode('REGISTER'); setFormError(''); setFormSuccess(''); }}
+                    onClick={() => switchAuthMode('REGISTER')}
                     className="text-amber-600 hover:text-amber-700 font-black underline underline-offset-2 ml-1 cursor-pointer"
                   >
                     Create New Account
@@ -823,7 +883,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
               <div>
                 <button
                   type="button"
-                  onClick={() => { setAuthMode('LOGIN'); setFormError(''); setFormSuccess(''); }}
+                  onClick={() => switchAuthMode('LOGIN')}
                   className="flex items-center gap-1 text-xs font-black text-amber-600 hover:text-amber-700 mb-2 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -846,7 +906,10 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
-                    autoComplete="name"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -867,7 +930,11 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
-                    autoComplete="email"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -887,6 +954,10 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     onChange={(e) => setRegPassword(e.target.value)}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
                     autoComplete="new-password"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    data-lpignore="true"
                     required
                   />
                   <button
@@ -916,7 +987,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     onChange={(e) => setRegPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
                     maxLength={10}
-                    autoComplete="tel"
+                    autoComplete="off"
                   />
                 </div>
               </div>
@@ -949,7 +1020,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                   Already registered?{' '}
                   <button
                     type="button"
-                    onClick={() => { setAuthMode('LOGIN'); setFormError(''); setFormSuccess(''); }}
+                    onClick={() => switchAuthMode('LOGIN')}
                     className="text-amber-600 hover:text-amber-700 font-black underline underline-offset-2 ml-1 cursor-pointer"
                   >
                     Sign In
@@ -1112,7 +1183,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
               <div>
                 <button
                   type="button"
-                  onClick={() => { setAuthMode('LOGIN'); setFormError(''); setFormSuccess(''); setResetSent(false); }}
+                  onClick={() => switchAuthMode('LOGIN')}
                   className="flex items-center gap-1 text-xs font-black text-amber-600 hover:text-amber-700 mb-2 cursor-pointer"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
@@ -1134,7 +1205,11 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     className={`flex-1 px-3.5 py-3 text-sm font-black outline-none bg-transparent ${inputTextColor}`}
-                    autoComplete="email"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck="false"
+                    data-lpignore="true"
                     required
                   />
                 </div>

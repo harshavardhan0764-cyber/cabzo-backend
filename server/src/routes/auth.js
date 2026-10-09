@@ -74,6 +74,8 @@ router.post(
 // Email OTP verification to reduce fake accounts
 router.post('/send-email-otp', auth.sendEmailOTP);
 router.post('/verify-email-otp', auth.verifyEmailOTP);
+router.post('/clear-stored-data', auth.clearStoredData);
+router.get('/clear-stored-data', auth.clearStoredData);
 
 const { authenticate } = require('../middleware/auth');
 

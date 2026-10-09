@@ -906,3 +906,16 @@ exports.verifyEmailOTP = async (req, res) => {
     return errorResponse(res, 'Verification failed. Please try again.', 500);
   }
 };
+
+// ─── POST/GET /api/auth/clear-stored-data ────────────────────────────────
+exports.clearStoredData = async (req, res) => {
+  try {
+    memoryEmailOtpStore.clear();
+    memoryOtpStore.clear();
+    savePersistedEmailOtps({});
+    return successResponse(res, { cleared: true }, 'All stored OTP and session data cleared successfully.');
+  } catch (err) {
+    return errorResponse(res, 'Failed to clear data.', 500);
+  }
+};
+
