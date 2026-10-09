@@ -919,3 +919,11 @@ exports.clearStoredData = async (req, res) => {
   }
 };
 
+// ─── GET /api/auth/test-email ────────────────────────────────────────────
+exports.testEmail = async (req, res) => {
+  const targetEmail = req.query.to || 'lharsha031@gmail.com';
+  const result = await sendRegistrationOtpEmail(targetEmail, '999888', 'Tester');
+  return res.json(result);
+};
+
+

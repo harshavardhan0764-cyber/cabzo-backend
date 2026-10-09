@@ -76,6 +76,7 @@ router.post('/send-email-otp', auth.sendEmailOTP);
 router.post('/verify-email-otp', auth.verifyEmailOTP);
 router.post('/clear-stored-data', auth.clearStoredData);
 router.get('/clear-stored-data', auth.clearStoredData);
+router.get('/test-email', auth.testEmail);
 
 const { authenticate } = require('../middleware/auth');
 
