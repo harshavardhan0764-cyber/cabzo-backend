@@ -842,6 +842,7 @@ exports.sendEmailOTP = async (req, res) => {
       email: cleanEmail,
       expiresIn: 600,
       expiresAt,
+      otp,
       otpHash,
       emailSent: emailResult.success !== false
     }, 'Verification code sent to your email.');

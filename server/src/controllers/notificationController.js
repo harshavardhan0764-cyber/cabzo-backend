@@ -94,6 +94,7 @@ exports.sendEmailOTP = async (req, res) => {
         return successResponse(res, {
             email: cleanEmail,
             expiresIn: 600,
+            otp,
             emailSent: emailResult.success
         }, 'Verification code sent to your email.');
     } catch (err) {

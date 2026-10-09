@@ -35,7 +35,7 @@ export const VEHICLE_CONFIGS = {
     fullName: 'Sedan Dzire (4+1)',
     tag: 'Economical & Popular',
     description: 'Maruti Dzire, Toyota Etios, Hyundai Aura',
-    ratePerKm: 14,
+    ratePerKm: 13,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -56,7 +56,7 @@ export const VEHICLE_CONFIGS = {
     fullName: 'Maruti Suzuki Ertiga (6+1)',
     tag: 'Spacious & Comfortable',
     description: 'Maruti Suzuki Ertiga AC with extra boot space',
-    ratePerKm: 19,
+    ratePerKm: 18,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -431,9 +431,8 @@ export function calculateFare({
     chargedKm = Math.max(billingKm, minBillableKm);
     baseFare = Math.round(chargedKm * vehicle.ratePerKm);
   } else {
-    // One-Way: Minimum billable km = 100 km (standard outstation minimum)
-    // For standard trips (e.g. 145 km Bangalore-Mysuru), user pays actual 145 km × rate
-    const minOneWayKm = 100;
+    // One-Way: Minimum billable distance = 250 km
+    const minOneWayKm = 250;
     chargedKm = Math.max(oneWayKm, minOneWayKm);
     baseFare = Math.round(chargedKm * vehicle.ratePerKm);
   }
