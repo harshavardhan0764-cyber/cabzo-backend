@@ -8,6 +8,7 @@
     "dev": "vite --port 5173",
     "dev:customer": "vite --port 5173",
     "dev:admin": "vite admin-app --port 5174",
+    "start": "cd server && node src/index.js",
     "build": "vite build",
     "build:customer": "vite build",
     "build:admin": "vite build admin-app --outDir admin-app/dist",
