@@ -668,7 +668,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
           <img 
             src={cabzoLogo} 
             alt="U &amp; I Cabs Logo" 
-            className="w-12 h-12 rounded-2xl shadow-xl border border-amber-300/40 object-contain bg-amber-500/20 backdrop-blur-xs shrink-0" 
+            className="w-12 h-12 rounded-2xl shadow-xl border border-white/60 object-contain bg-white shrink-0 p-1" 
           />
           <div>
             <h1 className="text-2xl font-black text-white flex items-center gap-2 drop-shadow-md tracking-wider">

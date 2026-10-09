@@ -196,30 +196,55 @@ export default function Screen6Fare({ onNavigate, onShowToast }) {
           </div>
 
           <div className="space-y-2.5 text-xs">
-            <div className="flex justify-between items-center text-slate-700">
-              <div>
-                <span className="block text-slate-900 font-bold">
-                  Base Fare ({chargedKm} km{bookingForm.tripType === 'roundtrip' ? ` • ${actualDistance} km × 2` : ''})
-                </span>
-                <span className="text-[10px] text-slate-500">₹{ratePerKm}/km ({bookingForm.tripType === 'roundtrip' ? 'Return Rate' : 'One-Way'}) • {vehicle?.fullName || 'Standard AC'}</span>
+            {bookingForm.tripType === 'oneway' ? (
+              <>
+                <div className="flex justify-between items-center text-slate-700">
+                  <div>
+                    <span className="block text-slate-900 font-bold">
+                      Onward Journey ({chargedKm} km)
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      ₹{fareSummary.oneWayRatePerKm || 13}/km • Min 250 km • {vehicle?.fullName || 'Standard AC'}
+                    </span>
+                  </div>
+                  <span className="font-extrabold text-slate-900 text-sm">₹{(fareSummary.onwardFare || 0).toLocaleString('en-IN')}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-700">
+                  <div>
+                    <span className="block text-slate-900 font-bold">
+                      One-Way Return Amount ({chargedKm} km)
+                    </span>
+                    <span className="text-[10px] text-orange-600 font-bold">
+                      ₹{fareSummary.oneWayReturnRatePerKm || 7}/km • Empty Return Allowance
+                    </span>
+                  </div>
+                  <span className="font-extrabold text-orange-700 text-sm">₹{(fareSummary.oneWayReturnAmount || 0).toLocaleString('en-IN')}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between items-center text-slate-700">
+                <div>
+                  <span className="block text-slate-900 font-bold">
+                    Round-Trip Fare ({chargedKm} km • {actualDistance} km × 2)
+                  </span>
+                  <span className="text-[10px] text-slate-500">₹{fareSummary.roundTripRatePerKm || 13}/km • Min {numDays * 250} km • {vehicle?.fullName || 'Standard AC'}</span>
+                </div>
+                <span className="font-extrabold text-slate-900 text-sm">₹{baseFare.toLocaleString('en-IN')}</span>
               </div>
-              <span className="font-extrabold text-slate-900 text-sm">₹{baseFare.toLocaleString('en-IN')}</span>
-            </div>
+            )}
 
             <div className="flex justify-between items-center text-slate-700">
               <div>
                 <span className="block text-slate-900 font-bold">
-                  {bookingForm.tripType === 'oneway' ? 'Driver Allowance (One-Way)' : `Driver Allowance (${numDays} ${numDays === 1 ? 'Day' : 'Days'})`}
+                  Driver Allowance ({numDays} {numDays === 1 ? 'Day' : 'Days'})
                 </span>
                 <span className="text-[10px] text-slate-500">
-                  {bookingForm.tripType === 'oneway' 
-                    ? (totalDriverBata === 0 ? '✓ Included in per-km fare' : `₹${totalDriverBata} night halt allowance`) 
-                    : `₹${driverBataPerDay}/day Bata • ${numDays === 1 ? '1-Day Trip (₹300)' : `Multi-Day (₹400/day)`}`
-                  }
+                  {numDays === 1 ? '₹300 (1-Day Trip)' : `₹400/day (${numDays} Days = ₹${totalDriverBata})`}
                 </span>
               </div>
               <span className="font-extrabold text-slate-900 text-sm">
-                {totalDriverBata === 0 ? '₹0 (Included)' : `₹${totalDriverBata.toLocaleString('en-IN')}`}
+                ₹{totalDriverBata.toLocaleString('en-IN')}
               </span>
             </div>
 
@@ -328,7 +353,12 @@ export default function Screen6Fare({ onNavigate, onShowToast }) {
               <div className="flex justify-between items-center">
                 <div>
                   <span className="font-bold text-slate-900 block">1. Base Fare</span>
-                  <span className="text-[10px] text-slate-500">{chargedKm} km @ ₹{ratePerKm}/km ({bookingForm.tripType === 'roundtrip' ? 'Return Rate' : 'One-Way'}) ({vehicle?.name}){bookingForm.tripType === 'roundtrip' ? ` (${actualDistance} km × 2)` : ''}</span>
+                  <span className="text-[10px] text-slate-500">
+                    {bookingForm.tripType === 'oneway' 
+                      ? `${chargedKm} km @ ₹${fareSummary.oneWayRatePerKm}/km onward + ₹${fareSummary.oneWayReturnRatePerKm}/km return`
+                      : `${chargedKm} km @ ₹${fareSummary.roundTripRatePerKm}/km round-trip`
+                    } ({vehicle?.name})
+                  </span>
                 </div>
                 <span className="font-black text-slate-900">₹{baseFare.toLocaleString('en-IN')}</span>
               </div>
@@ -337,7 +367,7 @@ export default function Screen6Fare({ onNavigate, onShowToast }) {
                 <div>
                   <span className="font-bold text-slate-900 block">2. Driver Allowance (Bata)</span>
                   <span className="text-[10px] text-slate-500">
-                    {numDays} {numDays === 1 ? 'day' : 'days'} @ ₹{driverBataPerDay}/day Bata ({numDays === 1 ? '₹300 for 1-day trip' : '₹400/day for multi-day trips'})
+                    {numDays} {numDays === 1 ? 'day' : 'days'} ({numDays === 1 ? '₹300 for 1-day trip' : `₹400/day for multi-day trips = ₹${totalDriverBata}`})
                   </span>
                 </div>
                 <span className="font-black text-slate-900">₹{totalDriverBata.toLocaleString('en-IN')}</span>

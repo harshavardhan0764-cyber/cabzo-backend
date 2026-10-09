@@ -36,7 +36,9 @@ export const VEHICLE_CONFIGS = {
     tag: 'Economical & Popular',
     description: 'Maruti Dzire, Toyota Etios, Hyundai Aura',
     ratePerKm: 13,
-    roundTripRatePerKm: 7,
+    oneWayRatePerKm: 13,
+    oneWayReturnRatePerKm: 7,
+    roundTripRatePerKm: 13,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -58,7 +60,9 @@ export const VEHICLE_CONFIGS = {
     tag: 'Spacious & Comfortable',
     description: 'Maruti Suzuki Ertiga AC with extra boot space',
     ratePerKm: 18,
-    roundTripRatePerKm: 11,
+    oneWayRatePerKm: 18,
+    oneWayReturnRatePerKm: 11,
+    roundTripRatePerKm: 18,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -80,7 +84,9 @@ export const VEHICLE_CONFIGS = {
     tag: 'Executive Family Ride',
     description: 'Toyota Innova Crysta with Captain Seats',
     ratePerKm: 24,
-    roundTripRatePerKm: 15,
+    oneWayRatePerKm: 24,
+    oneWayReturnRatePerKm: 15,
+    roundTripRatePerKm: 24,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -103,7 +109,9 @@ export const VEHICLE_CONFIGS = {
     statusText: 'Presently Not Available',
     description: 'Force Traveller AC (Currently Not Available)',
     ratePerKm: 26,
-    roundTripRatePerKm: 18,
+    oneWayRatePerKm: 26,
+    oneWayReturnRatePerKm: 18,
+    roundTripRatePerKm: 26,
     extraKmRate: 12,
     minKmPerDay: 300,
     driverBataPerDay: 500,
@@ -404,15 +412,14 @@ export function calculateFare({
   // Official Business Rule:
   // - 1-Day Trip: ₹300 per day (Total ₹300 for 1 day)
   // - Multi-Day Trip (> 1 day): ₹400 per day (Total numDays * ₹400)
-  // - One-Way: ₹0 (Driver bata is included in the one-way per-km tariff; trips > 650 km get night allowance)
   const isMultiDay = numDays > 1;
   const driverBataRate = isMultiDay
     ? (vehicle.driverBataMultiDay || 400)
     : (vehicle.driverBataPerDay || 300);
 
   const driverAllowance = isRoundTrip
-    ? numDays * driverBataRate
-    : (oneWayKm > 650 ? driverBataRate : 0);
+    ? (numDays * driverBataRate)
+    : (vehicle.driverBataPerDay || 300);
 
   // --- Dynamic Toll & State Border Taxes ---
   const tollInfo = calculateDynamicToll({
@@ -427,22 +434,33 @@ export function calculateFare({
 
   // --- Base Fare Calculation ---
   let baseFare = 0;
+  let onwardFare = 0;
+  let oneWayReturnAmount = 0;
   let chargedKm = billingKm;
   const effectiveRatePerKm = isRoundTrip
-    ? (vehicle.roundTripRatePerKm || 7)
-    : (vehicle.ratePerKm || 13);
+    ? (vehicle.roundTripRatePerKm || vehicle.ratePerKm)
+    : (vehicle.oneWayRatePerKm || vehicle.ratePerKm);
 
   if (isRoundTrip) {
     // Round Trip: Minimum billable km = numDays × minKmPerDay (250 km/day)
-    // If actual round-trip km exceeds this threshold, user only pays for actual km!
+    // Round-trip rate applies (Sedan ₹13, SUV ₹18, Innova ₹24)
     const minBillableKm = numDays * (vehicle.minKmPerDay || 250);
     chargedKm = Math.max(billingKm, minBillableKm);
     baseFare = Math.round(chargedKm * effectiveRatePerKm);
+    onwardFare = baseFare;
+    oneWayReturnAmount = 0;
   } else {
     // One-Way: Minimum billable distance = 250 km
-    const minOneWayKm = 250;
+    // Onward @ One-Way rate (Sedan ₹13, SUV ₹18, Innova ₹24)
+    // + One-Way Return Amount @ Return rate (Sedan ₹7, SUV ₹11, Innova ₹15)
+    const minOneWayKm = vehicle.minKmPerDay || 250;
     chargedKm = Math.max(oneWayKm, minOneWayKm);
-    baseFare = Math.round(chargedKm * effectiveRatePerKm);
+    const oneWayRate = vehicle.oneWayRatePerKm || vehicle.ratePerKm;
+    const returnRate = vehicle.oneWayReturnRatePerKm || 7;
+
+    onwardFare = Math.round(chargedKm * oneWayRate);
+    oneWayReturnAmount = Math.round(chargedKm * returnRate);
+    baseFare = onwardFare + oneWayReturnAmount;
   }
 
   // --- Roof Carrier / Extra Luggage Charge (+₹100) ---
@@ -464,12 +482,15 @@ export function calculateFare({
     actualDistance: oneWayKm,       // Always one-way km for display
     chargedKm,                       // Km used for base fare billing
     ratePerKm: effectiveRatePerKm,
-    oneWayRatePerKm: vehicle.ratePerKm,
-    roundTripRatePerKm: vehicle.roundTripRatePerKm || 7,
+    oneWayRatePerKm: vehicle.oneWayRatePerKm || vehicle.ratePerKm,
+    oneWayReturnRatePerKm: vehicle.oneWayReturnRatePerKm || 7,
+    roundTripRatePerKm: vehicle.roundTripRatePerKm || vehicle.ratePerKm,
+    onwardFare,
+    oneWayReturnAmount,
     extraKmRate,
     baseFare,
     numDays,
-    driverBataPerDay: isRoundTrip ? driverBataRate : 0,
+    driverBataPerDay: driverBataRate,
     totalDriverBata: driverAllowance,
     tollParking: tollAndFees,
     estimatedToll: tollInfo.totalToll,

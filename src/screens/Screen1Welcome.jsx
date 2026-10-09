@@ -12,6 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import uAndILogo from '../assets/cabzo_logo.png';
 
 const BENEFITS = [
   {
@@ -72,14 +73,13 @@ export default function Screen1Welcome({ onNavigate, onShowToast }) {
       {/* 1. Header & Logo */}
       <div className="pt-4 text-center">
         
-        {/* Animated Cab Logo Container */}
-        <div className="w-20 h-20 mx-auto mb-3 bg-gradient-to-tr from-orange-500 to-amber-400 rounded-3xl p-0.5 shadow-md shadow-orange-500/20 flex items-center justify-center transform hover:scale-105 transition duration-300">
-          <div className="w-full h-full bg-white rounded-[22px] flex items-center justify-center relative overflow-hidden shadow-inner">
-            <div className="absolute inset-0 bg-gradient-to-b from-orange-50 to-transparent pointer-events-none" />
-            <div className="animate-cab-drive flex items-center justify-center">
-              <span className="text-3xl">🚕</span>
-            </div>
-          </div>
+        {/* Official U & I Cabs Logo Container */}
+        <div className="w-24 h-24 mx-auto mb-3 rounded-3xl p-1 shadow-lg bg-white border border-slate-200 flex items-center justify-center transform hover:scale-105 transition duration-300">
+          <img 
+            src={uAndILogo} 
+            alt="U & I Cabs" 
+            className="w-full h-full object-contain rounded-2xl"
+          />
         </div>
 
         {/* Brand Tagline */}

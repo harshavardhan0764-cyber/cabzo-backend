@@ -439,7 +439,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
             <img 
               src={cabzoLogo} 
               alt="U & I Cabs" 
-              className="w-9 h-9 rounded-2xl object-contain shadow-xs border border-orange-500/30 shrink-0" 
+              className="w-10 h-10 rounded-2xl object-contain shadow-sm bg-white border border-slate-200 shrink-0 p-0.5" 
             />
             <div>
               <div className="flex items-center gap-1.5">
@@ -1266,7 +1266,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
                       <span className={`absolute top-2 right-2 text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-md shadow-xs ${
                         isDark ? 'bg-slate-950/80 text-orange-400 border border-orange-500/30' : 'bg-white/95 text-orange-600 border border-orange-200'
                       }`}>
-                        ₹{isRT ? (veh.roundTripRatePerKm || 7) : veh.ratePerKm}/km {isRT ? '• Return' : '• One-Way'}
+                        ₹{isRT ? (veh.roundTripRatePerKm || veh.ratePerKm) : veh.ratePerKm}/km {isRT ? '• Round Trip' : `(+₹${veh.oneWayReturnRatePerKm || 7}/km return)`}
                       </span>
                     ) : (
                       <span className="absolute top-2 right-2 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-950/90 text-rose-300 border border-rose-500/40 backdrop-blur-md">
