@@ -830,19 +830,16 @@ exports.sendEmailOTP = async (req, res) => {
     persisted[cleanEmail] = entry;
     savePersistedEmailOtps(persisted);
 
-    // Dispatch email with non-blocking timeout protection
-    const emailPromise = sendRegistrationOtpEmail(cleanEmail, otp, name).catch(err => {
-      console.warn('[Background Email Notice]', err.message);
+    // Dispatch real-time email via Google SMTP
+    const emailResult = await sendRegistrationOtpEmail(cleanEmail, otp, name).catch(err => {
+      console.warn('[Real-Time Email Warning]', err.message);
       return { success: false, error: err.message };
     });
-    const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ success: true, dispatched: true }), 3000));
-    const emailResult = await Promise.race([emailPromise, timeoutPromise]);
 
     return successResponse(res, {
       email: cleanEmail,
       expiresIn: 600,
       expiresAt,
-      otp,
       otpHash,
       emailSent: emailResult.success !== false
     }, 'Verification code sent to your email.');

@@ -55,7 +55,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
   const [regPhone, setRegPhone] = useState('');
   const [regCity, setRegCity] = useState('Bengaluru');
   const [regOtp, setRegOtp] = useState('');
-  const [receivedOtp, setReceivedOtp] = useState('');
   const [otpTimer, setOtpTimer] = useState(60);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
 
@@ -203,7 +202,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
             return {
               success: true,
               emailSent: true,
-              otp: json.data?.otp,
               otpHash: json.data?.otpHash,
               expiresAt: json.data?.expiresAt
             };
@@ -379,9 +377,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
     setSubmitting(true);
     try {
       const result = await dispatchEmailOtpApi(cleanEmail, cleanName);
-      const otpCode = result?.otp || Math.floor(100000 + Math.random() * 900000).toString();
-      setReceivedOtp(otpCode);
-      localStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, otpCode);
 
       if (result && result.otpHash) {
         try {
@@ -397,8 +392,8 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
       setAuthMode('VERIFY_EMAIL_OTP');
       setOtpTimer(60);
       setRegOtp('');
-      setFormSuccess(`Verification code dispatched to ${cleanEmail}. Check Inbox/Spam or use Auto-Fill below.`);
-      if (onShowToast) onShowToast(`Verification code sent! [OTP: ${otpCode}]`, 'info');
+      setFormSuccess(`Verification code sent to ${cleanEmail}. Please check your Inbox or Spam folder.`);
+      if (onShowToast) onShowToast(`Verification code sent to ${cleanEmail}!`, 'success');
     } catch (err) {
       setFormError(getFirebaseErrorMessage(err));
     } finally {
@@ -416,9 +411,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
 
     try {
       const result = await dispatchEmailOtpApi(cleanEmail, cleanName);
-      const otpCode = result?.otp || Math.floor(100000 + Math.random() * 900000).toString();
-      setReceivedOtp(otpCode);
-      localStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, otpCode);
 
       if (result && result.otpHash) {
         try {
@@ -431,10 +423,10 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
         } catch {}
       }
       setOtpTimer(60);
-      setFormSuccess(`New verification code sent to ${cleanEmail}.`);
-      if (onShowToast) onShowToast(`New OTP: [${otpCode}]`, 'info');
+      setFormSuccess(`New verification code sent to ${cleanEmail}. Please check your Inbox.`);
+      if (onShowToast) onShowToast(`New verification code sent to ${cleanEmail}!`, 'success');
     } catch (_) {
-      setFormError('Failed to resend code.');
+      setFormError('Failed to resend code. Please try again.');
     } finally {
       setIsResendingOtp(false);
     }
@@ -974,46 +966,22 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
               </div>
 
               {/* Informational Callout */}
-              <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/60 rounded-2xl p-3.5 text-xs shadow-xs">
+              <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/60 rounded-2xl p-4 text-xs shadow-xs space-y-1.5">
                 <p className="text-slate-800 dark:text-slate-200 font-bold">
-                  6-Digit OTP dispatched to:
+                  6-Digit OTP sent to your email:
                 </p>
-                <p className="font-mono font-black text-orange-600 dark:text-orange-400 text-sm mt-0.5 break-all">
+                <p className="font-mono font-black text-orange-600 dark:text-orange-400 text-sm break-all">
                   {regEmail.trim().toLowerCase()}
                 </p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1">
-                  <span>📬</span> Check your Inbox &amp; Spam folder, or tap Auto-Fill below.
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center gap-1.5 pt-1">
+                  <span>📬</span> Please check your <strong>Inbox</strong> (or Spam folder) and enter the code below.
                 </p>
               </div>
-
-              {/* Auto-Fill Banner if code is received */}
-              {receivedOtp && (
-                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 rounded-2xl p-3 flex items-center justify-between shadow-xs">
-                  <div>
-                    <span className="text-[10px] font-black uppercase text-emerald-800 dark:text-emerald-300 block">
-                      Your Verification Code
-                    </span>
-                    <span className="text-base font-mono font-black text-emerald-950 dark:text-emerald-100 tracking-widest">
-                      {receivedOtp}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegOtp(receivedOtp);
-                      if (onShowToast) onShowToast('OTP code auto-filled!', 'success');
-                    }}
-                    className="text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl transition shadow-xs active:scale-95 cursor-pointer"
-                  >
-                    Auto-Fill Code
-                  </button>
-                </div>
-              )}
 
               {/* 6-Digit Verification Code Input */}
               <div>
                 <label className={`block text-xs uppercase tracking-wider mb-1.5 ${labelColor}`}>
-                  Enter 6-Digit Code (Compulsory)
+                  Enter 6-Digit Code (From Email)
                 </label>
                 <div className={`flex items-center rounded-2xl overflow-hidden transition-all ${inputContainerTheme}`}>
                   <div className={`px-3.5 py-3 border-r ${isDark ? 'bg-slate-900 border-slate-700 text-slate-400' : 'bg-slate-100 border-slate-300 text-slate-700'}`}>
