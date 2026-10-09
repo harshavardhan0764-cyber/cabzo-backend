@@ -11,7 +11,11 @@ import {
   RefreshCw,
   AlertTriangle,
   Banknote,
-  Wallet
+  Wallet,
+  QrCode,
+  Copy,
+  Check,
+  ExternalLink
 } from 'lucide-react';
 import TopBar from '../components/TopBar';
 import { useBooking } from '../context/BookingContext';
@@ -27,8 +31,22 @@ import {
 export default function Screen7Payment({ onNavigate, onShowToast }) {
   const { fareSummary, createBooking, bookingForm } = useBooking();
   const { currentUser } = useAuth();
-  const [method, setMethod] = useState('driver'); // 'driver' | 'upi' | 'card' | 'netbanking'
+  const [method, setMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking' | 'driver'
+  const [advancePercent, setAdvancePercent] = useState(10); // 10 | 25 | 50 | 100
+  const [upiMode, setUpiMode] = useState('apps'); // 'apps' | 'qr' | 'id'
   const [upiApp, setUpiApp] = useState('gpay');
+  const [customUpiId, setCustomUpiId] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [selectedBank, setSelectedBank] = useState('HDFC');
+  
+  // Card Inputs
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardHolder, setCardHolder] = useState(currentUser?.name || '');
+
+  // Official Business UPI Details
+  const BUSINESS_UPI_ID = 'outstationcabsb@okaxis';
 
   // Customer registered email from account authentication
   const customerEmail = currentUser?.email || localStorage.getItem('CabApp_CustomerEmail') || 'customer@cabbazar.com';
@@ -54,7 +72,12 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
   // Pure ride fare excluding toll
   const grossTotal = fareSummary?.grossTotal || 2050;
   const rideFareOnly = Math.max(0, grossTotal - tollAmount);
-  const baseAdvance = Math.min(10000, Math.max(500, Math.round(rideFareOnly * 0.10)));
+
+  // Dynamic Advance Calculation (10%, 25%, 50%, or 100%)
+  const calculatedAdvance = Math.round(rideFareOnly * (advancePercent / 100));
+  const baseAdvance = advancePercent === 10 
+    ? Math.min(10000, Math.max(500, calculatedAdvance)) 
+    : calculatedAdvance;
 
   // Dynamic amounts based on user preference:
   const isPayToDriver = method === 'driver';
@@ -631,18 +654,336 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
           </p>
         </div>
 
+        {/* 2b. ADVANCE PAYMENT AMOUNT SELECTION */}
+        <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+              CHOOSE ADVANCE AMOUNT
+            </span>
+            <span className="text-[10px] text-orange-700 font-extrabold bg-orange-100 border border-orange-300 px-2 py-0.5 rounded-full">
+              ₹{advancePayment.toLocaleString('en-IN')} Advance
+            </span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 text-center">
+            {[
+              { pct: 10, label: '10% Token', sub: 'Min Lock' },
+              { pct: 25, label: '25%', sub: 'Quarter' },
+              { pct: 50, label: '50%', sub: 'Half' },
+              { pct: 100, label: '100%', sub: 'Full Prepaid' }
+            ].map(item => (
+              <button
+                key={item.pct}
+                type="button"
+                onClick={() => {
+                  setAdvancePercent(item.pct);
+                  if (method === 'driver') setMethod('upi');
+                }}
+                className={`p-2.5 rounded-2xl border font-black transition cursor-pointer ${
+                  advancePercent === item.pct && method !== 'driver'
+                    ? 'border-orange-500 bg-orange-500 text-white shadow-sm ring-2 ring-orange-400/20'
+                    : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="text-xs">{item.label}</div>
+                <div className="text-[9px] font-normal opacity-90 mt-0.5">{item.sub}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* 3. SUPPORTED PAYMENT METHODS */}
         <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-              CHOOSE PAYMENT OPTION
+              SELECT PAYMENT METHOD TO PAY ADVANCE
             </span>
             <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shadow-xs">
-              🔒 100% Verified & Protected
+              🔒 100% Encrypted & Safe
             </span>
           </div>
 
-          {/* Option 1: Pay After Trip to Driver */}
+          {/* Option 1: Instant UPI (Apps, QR & UPI ID) */}
+          <div
+            onClick={() => setMethod('upi')}
+            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
+              method === 'upi'
+                ? 'border-orange-500 bg-orange-50/40 ring-2 ring-orange-400/20 shadow-xs'
+                : 'border-slate-200 bg-white hover:border-orange-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 border border-purple-300 flex items-center justify-center font-bold">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-xs font-black text-slate-900">⚡ Instant UPI (Apps, QR & ID)</h4>
+                    <span className="text-[9px] bg-purple-100 text-purple-800 border border-purple-300 px-1.5 py-0.2 rounded-md font-bold">
+                      Zero Charges
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Google Pay, PhonePe, Paytm, BHIM, CRED</p>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                method === 'upi' ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
+              }`}>
+                {method === 'upi' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+            </div>
+
+            {method === 'upi' && (
+              <div className="mt-3 pt-3 border-t border-orange-200/80 space-y-3 animate-in fade-in">
+                {/* Sub-tabs for UPI Mode */}
+                <div className="flex rounded-xl bg-slate-100 p-1 text-[11px] font-bold">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setUpiMode('apps'); }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition cursor-pointer ${
+                      upiMode === 'apps' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    📱 UPI Apps
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setUpiMode('qr'); }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition cursor-pointer ${
+                      upiMode === 'qr' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    📷 Scan QR Code
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setUpiMode('id'); }}
+                    className={`flex-1 py-1.5 rounded-lg text-center transition cursor-pointer ${
+                      upiMode === 'id' ? 'bg-white text-orange-700 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    🆔 UPI ID / VPA
+                  </button>
+                </div>
+
+                {/* Sub-Mode 1: App Selector */}
+                {upiMode === 'apps' && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[
+                        { id: 'gpay', label: 'GPay', icon: '🟢' },
+                        { id: 'phonepe', label: 'PhonePe', icon: '🟣' },
+                        { id: 'paytm', label: 'Paytm', icon: '🔵' },
+                        { id: 'bhim', label: 'BHIM', icon: '🟠' }
+                      ].map(app => (
+                        <button
+                          key={app.id}
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setUpiApp(app.id); }}
+                          className={`p-2 rounded-xl border text-center text-[10px] font-black transition cursor-pointer ${
+                            upiApp === app.id 
+                              ? 'border-orange-500 bg-orange-100 text-orange-900 ring-2 ring-orange-300' 
+                              : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div>{app.icon}</div>
+                          <div className="mt-0.5">{app.label}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <a
+                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=CABZO%20Outstation&am=${advancePayment}&cu=INR&tn=Advance%20Booking`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-purple-700 hover:bg-purple-800 text-white font-extrabold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm text-center block"
+                    >
+                      <span>Pay ₹{advancePayment.toLocaleString('en-IN')} directly via UPI App</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )}
+
+                {/* Sub-Mode 2: Dynamic QR Code */}
+                {upiMode === 'qr' && (
+                  <div className="p-3 bg-white rounded-2xl border border-slate-200 text-center space-y-2.5">
+                    <div className="inline-block p-2 bg-slate-50 border-2 border-slate-300 rounded-2xl shadow-inner">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${BUSINESS_UPI_ID}&pn=CABZO%20Outstation&am=${advancePayment}&cu=INR&tn=Advance%20Booking`)}`}
+                        alt="CABZO UPI Payment QR Code"
+                        className="w-36 h-36 mx-auto rounded-lg"
+                      />
+                    </div>
+                    <div className="text-center">
+                      <span className="text-[10px] text-slate-500 uppercase font-black block">Scan & Pay Advance with any UPI App</span>
+                      <span className="text-sm font-black text-slate-900 block mt-0.5">₹{advancePayment.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                      <span className="text-xs font-mono font-bold text-slate-700 truncate">{BUSINESS_UPI_ID}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (navigator.clipboard) navigator.clipboard.writeText(BUSINESS_UPI_ID);
+                          setCopiedUpi(true);
+                          setTimeout(() => setCopiedUpi(false), 2000);
+                        }}
+                        className="p-1 px-2 rounded-lg bg-orange-100 text-orange-800 text-[10px] font-extrabold flex items-center gap-1 cursor-pointer shrink-0"
+                      >
+                        {copiedUpi ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedUpi ? 'Copied' : 'Copy UPI'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-Mode 3: Custom UPI ID */}
+                {upiMode === 'id' && (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. mobile@paytm or name@okaxis"
+                      value={customUpiId}
+                      onChange={(e) => setCustomUpiId(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:border-orange-500 font-mono"
+                    />
+                    <p className="text-[10px] text-slate-500">A payment collect request for ₹{advancePayment.toLocaleString('en-IN')} will be sent to your UPI app.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Option 2: Credit / Debit Card */}
+          <div
+            onClick={() => setMethod('card')}
+            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
+              method === 'card'
+                ? 'border-orange-500 bg-orange-50/40 ring-2 ring-orange-400/20 shadow-xs'
+                : 'border-slate-200 bg-white hover:border-orange-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 border border-blue-300 flex items-center justify-center">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900">💳 Credit / Debit Card</h4>
+                  <p className="text-[10px] text-slate-500">Visa, Mastercard, RuPay, Maestro, Amex</p>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                method === 'card' ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
+              }`}>
+                {method === 'card' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+            </div>
+
+            {method === 'card' && (
+              <div className="mt-3 pt-3 border-t border-orange-200/80 space-y-2.5 animate-in fade-in" onClick={(e) => e.stopPropagation()}>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1">Card Number</label>
+                  <input
+                    type="text"
+                    maxLength={19}
+                    placeholder="4532 •••• •••• 8901"
+                    value={cardNumber}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/\D/g, '').slice(0, 16);
+                      setCardNumber(v.replace(/(.{4})/g, '$1 ').trim());
+                    }}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-orange-500 font-mono tracking-wider"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 block mb-1">Valid Thru (MM/YY)</label>
+                    <input
+                      type="text"
+                      maxLength={5}
+                      placeholder="12/28"
+                      value={cardExpiry}
+                      onChange={(e) => setCardExpiry(e.target.value)}
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-orange-500 font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 block mb-1">CVV / CVC</label>
+                    <input
+                      type="password"
+                      maxLength={4}
+                      placeholder="•••"
+                      value={cardCvv}
+                      onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                      className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-orange-500 font-mono"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-slate-600 block mb-1">Name on Card</label>
+                  <input
+                    type="text"
+                    placeholder="Cardholder Name"
+                    value={cardHolder}
+                    onChange={(e) => setCardHolder(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-orange-500 capitalize"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Option 3: Net Banking */}
+          <div
+            onClick={() => setMethod('netbanking')}
+            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
+              method === 'netbanking'
+                ? 'border-orange-500 bg-orange-50/40 ring-2 ring-orange-400/20 shadow-xs'
+                : 'border-slate-200 bg-white hover:border-orange-300'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center justify-center">
+                  <Building className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-slate-900">🏦 Net Banking</h4>
+                  <p className="text-[10px] text-slate-500">SBI, HDFC, ICICI, Axis, 50+ Banks</p>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                method === 'netbanking' ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
+              }`}>
+                {method === 'netbanking' && <div className="w-2 h-2 rounded-full bg-white" />}
+              </div>
+            </div>
+
+            {method === 'netbanking' && (
+              <div className="mt-3 pt-3 border-t border-orange-200/80 space-y-2 animate-in fade-in" onClick={(e) => e.stopPropagation()}>
+                <span className="text-[10px] font-bold text-slate-600 block">Popular Banks:</span>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {['HDFC', 'SBI', 'ICICI', 'Axis', 'Kotak', 'PNB'].map(bank => (
+                    <button
+                      key={bank}
+                      type="button"
+                      onClick={() => setSelectedBank(bank)}
+                      className={`p-2 rounded-xl border text-center text-xs font-extrabold transition cursor-pointer ${
+                        selectedBank === bank
+                          ? 'border-orange-500 bg-orange-100 text-orange-950 ring-2 ring-orange-300'
+                          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {bank} Bank
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Option 4: Pay After Trip directly to Driver */}
           <div
             onClick={() => setMethod('driver')}
             className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
@@ -658,123 +999,18 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-black text-slate-900">💵 Pay to Driver (Cash / UPI)</h4>
+                    <h4 className="text-xs font-black text-slate-900">💵 Pay Later to Driver</h4>
                     <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.2 rounded-md font-extrabold uppercase">
                       Zero Advance
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Pay ₹{totalFare.toLocaleString('en-IN')} directly to your driver at trip end</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">Pay ₹{totalFare.toLocaleString('en-IN')} directly to your driver at trip end (Cash / UPI)</p>
                 </div>
               </div>
               <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                 method === 'driver' ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
               }`}>
                 {method === 'driver' && <div className="w-2 h-2 rounded-full bg-white" />}
-              </div>
-            </div>
-          </div>
-
-          {/* Option 2: Instant UPI */}
-          <div
-            onClick={() => setMethod('upi')}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
-              method === 'upi'
-                ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-400/20 shadow-xs'
-                : 'border-slate-200 bg-white hover:border-orange-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center font-bold">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-900">◉ Instant UPI</h4>
-                  <p className="text-[10px] text-slate-500">Google Pay, PhonePe, Paytm, BHIM</p>
-                </div>
-              </div>
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                method === 'upi' ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
-              }`}>
-                {method === 'upi' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-              </div>
-            </div>
-
-            {method === 'upi' && (
-              <div className="mt-3 pt-3 border-t border-orange-200/80 grid grid-cols-4 gap-1.5 animate-in fade-in">
-                {[
-                  { id: 'gpay', label: 'GPay', icon: '🟢' },
-                  { id: 'phonepe', label: 'PhonePe', icon: '🟣' },
-                  { id: 'paytm', label: 'Paytm', icon: '🔵' },
-                  { id: 'bhim', label: 'BHIM', icon: '🟠' }
-                ].map(app => (
-                  <button
-                    key={app.id}
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setUpiApp(app.id); }}
-                    className={`p-2 rounded-xl border text-center text-[10px] font-black transition cursor-pointer ${
-                      upiApp === app.id 
-                        ? 'border-orange-500 bg-orange-100 text-orange-900' 
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>{app.icon} {app.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Credit / Debit Card */}
-          <div
-            onClick={() => setMethod('card')}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
-              method === 'card'
-                ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-400/20 shadow-xs'
-                : 'border-slate-200 bg-white hover:border-orange-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-900">○ Credit / Debit Card</h4>
-                  <p className="text-[10px] text-slate-500">Visa, Mastercard, RuPay, Maestro</p>
-                </div>
-              </div>
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                method === 'card' ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
-              }`}>
-                {method === 'card' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-              </div>
-            </div>
-          </div>
-
-          {/* Net Banking */}
-          <div
-            onClick={() => setMethod('netbanking')}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
-              method === 'netbanking'
-                ? 'border-orange-500 bg-orange-50/50 ring-2 ring-orange-400/20 shadow-xs'
-                : 'border-slate-200 bg-white hover:border-orange-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
-                  <Building className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-black text-slate-900">○ Net Banking</h4>
-                  <p className="text-[10px] text-slate-500">SBI, HDFC, ICICI, Axis, 50+ Banks</p>
-                </div>
-              </div>
-              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                method === 'netbanking' ? 'border-orange-500 bg-orange-500' : 'border-slate-300'
-              }`}>
-                {method === 'netbanking' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
               </div>
             </div>
           </div>
