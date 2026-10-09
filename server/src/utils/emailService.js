@@ -4,31 +4,33 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 dotenv.config();
 const nodemailer = require('nodemailer');
 
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
+
 let cachedTransporter = null;
 
-async function getTransporter() {
-  if (cachedTransporter) return cachedTransporter;
-
+async function getTransporter(preferredPort = 465) {
   const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = parseInt(process.env.SMTP_PORT || '465', 10);
+  const port = preferredPort || parseInt(process.env.SMTP_PORT || '465', 10);
   const user = process.env.SMTP_USER || 'outstationcabsb@gmail.com';
   const rawPass = (process.env.SMTP_PASS || 'tnfw ymqp nsqi qhnv').trim();
-  const pass = host.includes('gmail.com') ? rawPass.replace(/\s+/g, '') : rawPass;
+  const pass = rawPass.replace(/\s+/g, '');
 
   // Always use real Gmail SMTP credentials
   if (user && pass && pass.length >= 8) {
-    console.log(`[Email Service] Authenticating with real SMTP server (${host}:${port}) for ${user}...`);
-    cachedTransporter = nodemailer.createTransport({
-      service: host.includes('gmail.com') ? 'gmail' : undefined,
-      host,
-      port,
+    return nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: port,
       secure: port === 465,
+      requireTLS: port === 587,
       auth: { user, pass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 15000
+      connectionTimeout: 5000,
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
+      tls: { rejectUnauthorized: false }
     });
-    return cachedTransporter;
   }
 
   console.warn(`\n⚠️  [CabBazar Email Notice]: Real SMTP password not configured in server/.env.`);
@@ -645,27 +647,43 @@ Do not share this OTP with anyone.
 Email: outstationcabsb@gmail.com
 `;
 
-  try {
-    const transporter = await getTransporter();
-    const mailOptions = {
-      from: getCleanFromHeader('U & I Cabs'),
-      to: email,
-      subject,
-      text: textContent,
-      html: htmlContent
-    };
+  const mailOptions = {
+    from: getCleanFromHeader('U & I Cabs'),
+    to: email,
+    subject,
+    text: textContent,
+    html: htmlContent
+  };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`\n📧 [EMAIL OTP DISPATCHED] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
+  // Strategy 1: Attempt Port 465 (SSL)
+  try {
+    const transporter465 = await getTransporter(465);
+    const info = await transporter465.sendMail(mailOptions);
+    console.log(`\n📧 [EMAIL OTP DISPATCHED via 465] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
     return {
       success: true,
-      messageId: info.messageId
+      messageId: info.messageId,
+      port: 465
     };
-  } catch (err) {
-    console.warn('[Email OTP Dispatch Warning]', err.message);
+  } catch (err465) {
+    console.warn(`[Email OTP Warning] Port 465 failed (${err465.message}). Retrying via Port 587 (STARTTLS)...`);
+  }
+
+  // Strategy 2: Fallback to Port 587 (STARTTLS)
+  try {
+    const transporter587 = await getTransporter(587);
+    const info = await transporter587.sendMail(mailOptions);
+    console.log(`\n📧 [EMAIL OTP DISPATCHED via 587] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
+    return {
+      success: true,
+      messageId: info.messageId,
+      port: 587
+    };
+  } catch (err587) {
+    console.warn('[Email OTP Warning] Port 587 also failed:', err587.message);
     return {
       success: false,
-      error: err.message
+      error: err587.message
     };
   }
 }
