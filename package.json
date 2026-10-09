@@ -1,0 +1,82 @@
+{
+  "name": "cab-booking-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron-main.cjs",
+  "scripts": {
+    "dev": "vite --port 5173",
+    "dev:customer": "vite --port 5173",
+    "dev:admin": "vite admin-app --port 5174",
+    "build": "vite build",
+    "build:customer": "vite build",
+    "build:admin": "vite build admin-app --outDir admin-app/dist",
+    "server": "node server/src/index.js",
+    "preview": "vite preview",
+    "electron:start": "electron electron-main.cjs",
+    "build:exe": "npm run build && electron-builder --win portable nsis"
+  },
+  "build": {
+    "appId": "com.cabbazar.desktop",
+    "productName": "CabBazar",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "CabBazar"
+    },
+    "portable": {
+      "artifactName": "CabBazar-Portable.exe"
+    },
+    "files": [
+      "electron-main.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "app_dist"
+      },
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "src/**/*",
+          "package.json",
+          ".env",
+          "!node_modules/**/*"
+        ]
+      }
+    ]
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@googlemaps/js-api-loader": "^2.1.1",
+    "clsx": "^2.1.1",
+    "firebase": "^12.19.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^1.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "vite": "^5.4.8"
+  }
+}

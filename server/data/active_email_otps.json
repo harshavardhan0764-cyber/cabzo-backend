@@ -1,0 +1,23 @@
+{
+  "lharsha031@gmail.com": {
+    "otp": "683392",
+    "otpHash": "d520331aa7080c90fdfd1112f9206e4568e47b75d567e8275d376fabbc045be6",
+    "expiresAt": 1791542378050,
+    "attempts": 0,
+    "createdAt": 1791541778050
+  },
+  "test@example.com": {
+    "otp": "576219",
+    "otpHash": "44996f18023a5618f7d85f15acf5837c6df2ffb6e284661a0d5eb40cc567adea",
+    "expiresAt": 1790960809985,
+    "attempts": 0,
+    "createdAt": 1790960209985
+  },
+  "outstationcabsb@gmail.com": {
+    "otp": "962370",
+    "otpHash": "c0a721bf087a91df4fa65266979807433a9342dce59f8391e6b3965c71f0f54c",
+    "expiresAt": 1791098279262,
+    "attempts": 0,
+    "createdAt": 1791097679262
+  }
+}

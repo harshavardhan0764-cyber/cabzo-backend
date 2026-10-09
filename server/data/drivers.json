@@ -1,0 +1,47 @@
+[
+  {
+    "id": "drv-1",
+    "name": "M. Suresh Kumar",
+    "phone": "+91 94441 23456",
+    "cabNumber": "KA 01 AH 8899",
+    "cabModel": "Maruti Suzuki Ertiga (Grey AC)",
+    "rating": 4.9,
+    "status": "BUSY"
+  },
+  {
+    "id": "drv-2",
+    "name": "Anand R.",
+    "phone": "+91 97410 56789",
+    "cabNumber": "KA 05 MN 3421",
+    "cabModel": "Toyota Innova Crysta (Silver AC)",
+    "rating": 5,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "drv-3",
+    "name": "Manjunath Gowda",
+    "phone": "+91 99801 11223",
+    "cabNumber": "KA 04 MM 5566",
+    "cabModel": "Maruti Suzuki Ertiga (White AC)",
+    "rating": 4.8,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "drv-4",
+    "name": "R. Karthi",
+    "phone": "+91 98840 98765",
+    "cabNumber": "KA 03 XY 1234",
+    "cabModel": "Swift Dzire Sedan (White AC)",
+    "rating": 4.9,
+    "status": "AVAILABLE"
+  },
+  {
+    "id": "drv-5",
+    "name": "Gurpreet Singh",
+    "phone": "+91 98112 33445",
+    "cabNumber": "KA 01 TA 7711",
+    "cabModel": "Innova Crysta (Bronze AC)",
+    "rating": 4.9,
+    "status": "OFFLINE"
+  }
+]
