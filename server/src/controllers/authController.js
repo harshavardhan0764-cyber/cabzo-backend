@@ -886,7 +886,7 @@ exports.verifyEmailOTP = async (req, res) => {
       return errorResponse(res, 'Too many failed attempts. Please request a new OTP.', 429);
     }
 
-    if (record.otp !== cleanOtp && cleanOtp !== '831075') {
+    if (record.otp !== cleanOtp) {
       record.attempts += 1;
       const persisted = getPersistedEmailOtps();
       persisted[cleanEmail] = record;

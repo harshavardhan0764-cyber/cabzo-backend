@@ -20,16 +20,32 @@ async function getTransporter(preferredPort = 465) {
 
   // Always use real Gmail SMTP credentials
   if (user && pass && pass.length >= 8) {
+    if (preferredPort === 'service_gmail' || !preferredPort) {
+      return nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user, pass },
+        family: 4,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+        tls: { rejectUnauthorized: false }
+      });
+    }
+
     return nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: port,
       secure: port === 465,
       requireTLS: port === 587,
       auth: { user, pass },
-      connectionTimeout: 5000,
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
-      tls: { rejectUnauthorized: false }
+      family: 4,
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+      tls: {
+        servername: 'smtp.gmail.com',
+        rejectUnauthorized: false
+      }
     });
   }
 
@@ -655,7 +671,21 @@ Email: outstationcabsb@gmail.com
     html: htmlContent
   };
 
-  // Strategy 1: Attempt Port 465 (SSL)
+  // Strategy 1: Attempt service: gmail (uses Google's optimized endpoints with IPv4)
+  try {
+    const transporterGmail = await getTransporter('service_gmail');
+    const info = await transporterGmail.sendMail(mailOptions);
+    console.log(`\n📧 [EMAIL OTP DISPATCHED via Gmail Service] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
+    return {
+      success: true,
+      messageId: info.messageId,
+      strategy: 'service_gmail'
+    };
+  } catch (errService) {
+    console.warn(`[Email OTP Warning] Gmail service failed (${errService.message}). Retrying via Port 465...`);
+  }
+
+  // Strategy 2: Attempt Port 465 (SSL IPv4)
   try {
     const transporter465 = await getTransporter(465);
     const info = await transporter465.sendMail(mailOptions);

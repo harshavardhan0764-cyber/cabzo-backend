@@ -57,7 +57,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
   const [regOtp, setRegOtp] = useState('');
   const [otpTimer, setOtpTimer] = useState(60);
   const [isResendingOtp, setIsResendingOtp] = useState(false);
-  const [activeOtpCode, setActiveOtpCode] = useState('831075');
+  const [activeOtpCode, setActiveOtpCode] = useState('');
 
   // ─── PURGE ALL STORED DATA (Email, Password, Tokens, Sessions) ──────────────
   const purgeAllStoredAuthData = () => {
@@ -276,7 +276,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
   };
 
   const verifyEmailOtpApi = async (email, otp) => {
-    if (otp === '831075') return { success: true }; // Helpline support code
     const urls = getCandidateApiUrls('/auth/verify-email-otp');
     const fetchPromises = urls.map(async (targetUrl) => {
       const controller = new AbortController();
@@ -429,16 +428,16 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
       return;
     }
 
-    // 1. Generate live 6-digit OTP instantly
+    // 1. Generate live 6-digit OTP
     const liveOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setActiveOtpCode(liveOtp);
-    setRegOtp(liveOtp);
+    setActiveOtpCode('');
+    setRegOtp(''); // Input remains completely blank so user enters code from their email
 
     // 2. IMMEDIATELY switch to OTP screen - ZERO DELAY!
     setAuthMode('VERIFY_EMAIL_OTP');
     setOtpTimer(60);
-    setFormSuccess(`Verification code ${liveOtp} sent to ${cleanEmail}. Check your inbox!`);
-    if (onShowToast) onShowToast(`Real-Time OTP: ${liveOtp}`, 'success');
+    setFormSuccess(`Verification code sent to ${cleanEmail}. Please check your inbox and spam folder.`);
+    if (onShowToast) onShowToast(`Verification code sent to ${cleanEmail}`, 'success');
 
     // 3. Dispatch to email via Google Firebase Identity Toolkit (Port 443 / HTTPS - guaranteed delivery)
     const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCvosKVilRX-0VcxHfNFbKFJFn1MrWl1jk';
@@ -461,8 +460,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
         localStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, computedHash);
         sessionStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, liveExpires.toString());
         localStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, liveExpires.toString());
-        sessionStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, liveOtp);
-        localStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, liveOtp);
       } catch {}
 
       try {
@@ -485,11 +482,11 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
     setFormSuccess('');
 
     const liveOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    setActiveOtpCode(liveOtp);
-    setRegOtp(liveOtp);
+    setActiveOtpCode('');
+    setRegOtp('');
     setOtpTimer(60);
-    setFormSuccess(`New verification code: ${liveOtp}`);
-    if (onShowToast) onShowToast(`New Real-Time OTP: ${liveOtp}`, 'success');
+    setFormSuccess(`New verification code sent to ${cleanEmail}. Check your inbox!`);
+    if (onShowToast) onShowToast(`New verification code sent to ${cleanEmail}`, 'success');
 
     // Send via Google Firebase Identity Toolkit
     const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCvosKVilRX-0VcxHfNFbKFJFn1MrWl1jk';
@@ -512,8 +509,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
         localStorage.setItem(`CabApp_OtpHash_${cleanEmail}`, computedHash);
         sessionStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, liveExpires.toString());
         localStorage.setItem(`CabApp_OtpExpires_${cleanEmail}`, liveExpires.toString());
-        sessionStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, liveOtp);
-        localStorage.setItem(`CabApp_Local_OTP_${cleanEmail}`, liveOtp);
       } catch {}
 
       try {
@@ -558,42 +553,24 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
     try {
       // 1. Check verification via real-time code, helpline code, or API
       let verified = false;
-      if (activeOtpCode && cleanOtp === activeOtpCode) {
-        verified = true;
-      } else if (cleanOtp === '831075' || cleanOtp === '123456') {
+      const apiCheck = await verifyEmailOtpApi(cleanEmail, cleanOtp);
+      if (apiCheck.success) {
         verified = true;
       } else {
-        const apiCheck = await verifyEmailOtpApi(cleanEmail, cleanOtp);
-        if (apiCheck.success) {
-          verified = true;
-        } else {
-          // Fallback 1: Cryptographic SHA-256 validation of the code dispatched to their email
-          try {
-            const storedHash = sessionStorage.getItem(`CabApp_OtpHash_${cleanEmail}`) || localStorage.getItem(`CabApp_OtpHash_${cleanEmail}`);
-            const storedExpires = sessionStorage.getItem(`CabApp_OtpExpires_${cleanEmail}`) || localStorage.getItem(`CabApp_OtpExpires_${cleanEmail}`);
-            if (storedHash) {
-              const computedHash = await sha256Hex(`${cleanEmail}:${cleanOtp}:cabbazar_otp_secure_salt_2026`);
-              const isNotExpired = !storedExpires || Date.now() < parseInt(storedExpires, 10);
-              if (computedHash === storedHash && isNotExpired) {
-                verified = true;
-                sessionStorage.removeItem(`CabApp_OtpHash_${cleanEmail}`);
-                localStorage.removeItem(`CabApp_OtpHash_${cleanEmail}`);
-              }
+        // Cryptographic SHA-256 validation of the code dispatched to customer's email
+        try {
+          const storedHash = sessionStorage.getItem(`CabApp_OtpHash_${cleanEmail}`) || localStorage.getItem(`CabApp_OtpHash_${cleanEmail}`);
+          const storedExpires = sessionStorage.getItem(`CabApp_OtpExpires_${cleanEmail}`) || localStorage.getItem(`CabApp_OtpExpires_${cleanEmail}`);
+          if (storedHash) {
+            const computedHash = await sha256Hex(`${cleanEmail}:${cleanOtp}:cabbazar_otp_secure_salt_2026`);
+            const isNotExpired = !storedExpires || Date.now() < parseInt(storedExpires, 10);
+            if (computedHash === storedHash && isNotExpired) {
+              verified = true;
+              sessionStorage.removeItem(`CabApp_OtpHash_${cleanEmail}`);
+              localStorage.removeItem(`CabApp_OtpHash_${cleanEmail}`);
             }
-          } catch (_) {}
-
-          // Fallback 2: Offline session verification
-          if (!verified) {
-            try {
-              const localOtp = sessionStorage.getItem(`CabApp_Local_OTP_${cleanEmail}`) || localStorage.getItem(`CabApp_Local_OTP_${cleanEmail}`);
-              if (localOtp && localOtp === cleanOtp) {
-                verified = true;
-                sessionStorage.removeItem(`CabApp_Local_OTP_${cleanEmail}`);
-                localStorage.removeItem(`CabApp_Local_OTP_${cleanEmail}`);
-              }
-            } catch {}
           }
-        }
+        } catch (_) {}
       }
 
       if (!verified) {
@@ -1079,40 +1056,31 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
                 </div>
               </div>
 
-              {/* Real-Time OTP Alert Card */}
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 border-2 border-orange-400 dark:border-orange-600 rounded-2xl p-4 shadow-md space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">🔔</span>
-                    <span className="text-xs font-black uppercase tracking-wider text-orange-900 dark:text-orange-200">
-                      Real-Time Verification Code
-                    </span>
+              {/* Email Sent Notice Card */}
+              <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-2 border-amber-500/30 rounded-2xl p-4 shadow-sm space-y-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm font-black shrink-0">
+                    ✉️
                   </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
-                    Live Ready
+                  <div>
+                    <h4 className="text-xs font-black uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                      Check Your Email Inbox
+                    </h4>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                      A 6-digit OTP verification code was sent to:
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white/80 dark:bg-slate-900/80 border border-amber-500/30 rounded-xl px-3.5 py-2.5 text-center shadow-xs">
+                  <span className="font-mono text-sm font-black text-amber-600 dark:text-amber-400 break-all">
+                    {regEmail.trim().toLowerCase()}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-orange-300 dark:border-orange-700 rounded-xl px-4 py-2.5">
-                  <span className="font-mono text-2xl font-black tracking-widest text-orange-600 dark:text-orange-400">
-                    {activeOtpCode || '831075'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRegOtp(activeOtpCode || '831075');
-                      if (onShowToast) onShowToast('OTP Auto-filled!', 'success');
-                    }}
-                    className="px-3.5 py-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-black text-xs transition cursor-pointer shadow-xs flex items-center gap-1"
-                  >
-                    <span>⚡</span>
-                    <span>Tap to Auto-Fill</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400 pt-0.5">
-                  <span>📬 Sent to: <strong className="font-mono text-orange-600 dark:text-orange-400">{regEmail.trim().toLowerCase()}</strong></span>
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">✓ Valid 10m</span>
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
+                  <span>⏱️ Valid for 10 minutes</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-bold">Check inbox &amp; spam folder</span>
                 </div>
               </div>
 
