@@ -27,14 +27,15 @@ import {
   loadRazorpayScript, 
   getRazorpayConfig
 } from '../utils/paymentApi';
+import ownerQrImg from '../assets/owner_phonepe_qr.jpg';
 
 export default function Screen7Payment({ onNavigate, onShowToast }) {
   const { fareSummary, createBooking, bookingForm } = useBooking();
   const { currentUser } = useAuth();
   const [method, setMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking' | 'driver'
   const [advancePercent, setAdvancePercent] = useState(10); // 10 | 25 | 50 | 100
-  const [upiMode, setUpiMode] = useState('apps'); // 'apps' | 'qr' | 'id'
-  const [upiApp, setUpiApp] = useState('gpay');
+  const [upiMode, setUpiMode] = useState('qr'); // 'qr' | 'apps' | 'id'
+  const [upiApp, setUpiApp] = useState('phonepe');
   const [customUpiId, setCustomUpiId] = useState('');
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [selectedBank, setSelectedBank] = useState('HDFC');
@@ -45,8 +46,9 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
   const [cardCvv, setCardCvv] = useState('');
   const [cardHolder, setCardHolder] = useState(currentUser?.name || '');
 
-  // Official Business UPI Details
-  const BUSINESS_UPI_ID = 'outstationcabsb@okaxis';
+  // Official Business UPI Details (Direct to K C DIWAKAR REDDY)
+  const BUSINESS_UPI_ID = 'k.c.diwakarreddy5131@ybl';
+  const BUSINESS_PAYEE_NAME = 'K C DIWAKAR REDDY';
 
   // Customer registered email from account authentication
   const customerEmail = currentUser?.email || localStorage.getItem('CabApp_CustomerEmail') || 'customer@cabbazar.com';
@@ -166,7 +168,75 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
       }
     }
 
-    // ── CASE 2: ONLINE ADVANCE (UPI, CARD, NETBANKING VIA RAZORPAY) ────────────
+    // ── CASE 2: DIRECT PHONEPE / UPI ADVANCE PAYMENT (OWNER QR / VPA) ─────────
+    if (method === 'upi') {
+      setProcessingStep('Confirming advance payment via PhonePe UPI...');
+      try {
+        const upiPaymentId = `UPI_${Date.now().toString().slice(-8)}`;
+        const createdBooking = createBooking({
+          paymentId: upiPaymentId,
+          razorpayOrderId: `UPI_PHONEPE_${BUSINESS_PAYEE_NAME.replace(/\s+/g, '_')}`,
+          amount: advancePayment,
+          method: 'PHONEPE_UPI',
+          userEmail: customerEmail.trim(),
+          payTollNow,
+          tollPaymentPreference: payTollNow ? 'PAY_NOW_ONLINE' : 'PAY_AFTER_TRIP',
+          tollAmount,
+          nhaiToll,
+          statePermitFee,
+          stateBorderCount,
+          totalFare,
+          balancePayable: remainingAmount
+        });
+
+        const confirmedId = typeof createdBooking === 'object' ? createdBooking.bookingId : prospectiveBookingId;
+
+        // Dispatch email notification
+        try {
+          await sendBookingEmailConfirmation({
+            bookingId: confirmedId,
+            userName: customerName,
+            customerName,
+            customerPhone,
+            userPhone: customerPhone,
+            customerEmail,
+            userEmail: customerEmail,
+            pickup: pickupName,
+            drop: dropName,
+            totalFare,
+            advancePaid: advancePayment,
+            remainingAmount,
+            paymentStatus: `PAID (Advance ₹${advancePayment.toLocaleString('en-IN')} via PhonePe UPI to ${BUSINESS_PAYEE_NAME})`,
+            paymentId: upiPaymentId,
+            vehicleCategory: vehicleName,
+            tripType: bookingForm?.tripType,
+            pickupDate: bookingForm?.pickupDate,
+            pickupTime: bookingForm?.pickupTime,
+            tollAmount,
+            nhaiToll,
+            statePermitFee,
+            stateBorderCount,
+            payTollNow
+          });
+        } catch (_) {}
+
+        setSuccess(true);
+        setProcessing(false);
+        if (onShowToast) {
+          onShowToast(`✅ Advance of ₹${advancePayment.toLocaleString('en-IN')} confirmed via PhonePe UPI!`, 'success');
+        }
+        setTimeout(() => {
+          onNavigate('BookingStatusScreen', { bookingId: confirmedId });
+        }, 500);
+        return;
+      } catch (err) {
+        setProcessing(false);
+        setErrorMessage(err.message || 'Could not verify booking. Please try again.');
+        return;
+      }
+    }
+
+    // ── CASE 3: CARD & NETBANKING ONLINE ADVANCE (RAZORPAY) ────────────────────
     setProcessingStep('Connecting to payment gateway...');
 
     try {
@@ -769,56 +839,78 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
 
                 {/* Sub-Mode 1: App Selector */}
                 {upiMode === 'apps' && (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <div className="grid grid-cols-4 gap-1.5">
                       {[
-                        { id: 'gpay', label: 'GPay', icon: '🟢' },
                         { id: 'phonepe', label: 'PhonePe', icon: '🟣' },
+                        { id: 'gpay', label: 'GPay', icon: '🟢' },
                         { id: 'paytm', label: 'Paytm', icon: '🔵' },
                         { id: 'bhim', label: 'BHIM', icon: '🟠' }
                       ].map(app => (
                         <button
                           key={app.id}
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setUpiApp(app.id); }}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setUpiApp(app.id);
+                            window.location.href = `upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`;
+                          }}
                           className={`p-2 rounded-xl border text-center text-[10px] font-black transition cursor-pointer ${
                             upiApp === app.id 
-                              ? 'border-orange-500 bg-orange-100 text-orange-900 ring-2 ring-orange-300' 
+                              ? 'border-purple-500 bg-purple-100 text-purple-950 ring-2 ring-purple-300' 
                               : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <div>{app.icon}</div>
+                          <div className="text-base">{app.icon}</div>
                           <div className="mt-0.5">{app.label}</div>
                         </button>
                       ))}
                     </div>
                     <a
-                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=CABZO%20Outstation&am=${advancePayment}&cu=INR&tn=Advance%20Booking`}
+                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-full bg-purple-700 hover:bg-purple-800 text-white font-extrabold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm text-center block"
+                      className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm text-center block"
                     >
-                      <span>Pay ₹{advancePayment.toLocaleString('en-IN')} directly via UPI App</span>
+                      <span>Pay ₹{advancePayment.toLocaleString('en-IN')} via UPI App</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   </div>
                 )}
 
-                {/* Sub-Mode 2: Dynamic QR Code */}
+                {/* Sub-Mode 2: Real PhonePe Merchant QR Code */}
                 {upiMode === 'qr' && (
-                  <div className="p-3 bg-white rounded-2xl border border-slate-200 text-center space-y-2.5">
-                    <div className="inline-block p-2 bg-slate-50 border-2 border-slate-300 rounded-2xl shadow-inner">
+                  <div className="p-3 bg-white rounded-2xl border border-slate-200 text-center space-y-3">
+                    <div className="relative inline-block p-2 bg-gradient-to-b from-purple-50 to-white border-2 border-purple-200 rounded-2xl shadow-sm">
                       <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${BUSINESS_UPI_ID}&pn=CABZO%20Outstation&am=${advancePayment}&cu=INR&tn=Advance%20Booking`)}`}
-                        alt="CABZO UPI Payment QR Code"
-                        className="w-36 h-36 mx-auto rounded-lg"
+                        src={ownerQrImg}
+                        alt="PhonePe Payment QR Code - K C DIWAKAR REDDY"
+                        className="w-44 h-auto max-h-56 mx-auto rounded-xl object-contain shadow-xs"
                       />
+                      <div className="absolute top-3 right-3 bg-purple-700 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow">
+                        ✓ PhonePe
+                      </div>
                     </div>
+
                     <div className="text-center">
-                      <span className="text-[10px] text-slate-500 uppercase font-black block">Scan & Pay Advance with any UPI App</span>
-                      <span className="text-sm font-black text-slate-900 block mt-0.5">₹{advancePayment.toLocaleString('en-IN')}</span>
+                      <div className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-900 border border-purple-200 px-3 py-1 rounded-full text-xs font-black">
+                        <span>Payee:</span>
+                        <span className="font-extrabold">{BUSINESS_PAYEE_NAME}</span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-bold block mt-1.5">
+                        Scan with PhonePe, Google Pay, Paytm, or any UPI App
+                      </span>
+                      <div className="text-sm font-black text-slate-900 mt-1 flex items-center justify-center gap-1.5">
+                        <span className="text-xs text-slate-500 font-semibold">Advance to Pay:</span>
+                        <span className="text-emerald-700 font-black text-base">₹{advancePayment.toLocaleString('en-IN')}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                      <span className="text-xs font-mono font-bold text-slate-700 truncate">{BUSINESS_UPI_ID}</span>
+
+                    {/* Copyable UPI ID */}
+                    <div className="flex items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                      <div className="text-left min-w-0">
+                        <span className="text-[9px] text-slate-400 font-bold uppercase block">UPI ID / VPA</span>
+                        <span className="text-xs font-mono font-bold text-slate-800 truncate block">{BUSINESS_UPI_ID}</span>
+                      </div>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -827,12 +919,22 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
                           setCopiedUpi(true);
                           setTimeout(() => setCopiedUpi(false), 2000);
                         }}
-                        className="p-1 px-2 rounded-lg bg-orange-100 text-orange-800 text-[10px] font-extrabold flex items-center gap-1 cursor-pointer shrink-0"
+                        className="p-1.5 px-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-extrabold flex items-center gap-1 cursor-pointer shrink-0 shadow-xs active:scale-95 transition"
                       >
-                        {copiedUpi ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                        <span>{copiedUpi ? 'Copied' : 'Copy UPI'}</span>
+                        {copiedUpi ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedUpi ? 'Copied!' : 'Copy UPI'}</span>
                       </button>
                     </div>
+
+                    {/* Mobile Quick Intent link */}
+                    <a
+                      href={`upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full bg-gradient-to-r from-purple-700 to-indigo-700 hover:from-purple-800 hover:to-indigo-800 text-white font-extrabold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm text-center block"
+                    >
+                      <span>Open UPI App & Pay ₹{advancePayment.toLocaleString('en-IN')}</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
                   </div>
                 )}
 
@@ -1068,13 +1170,15 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
               ? 'bg-slate-200 text-slate-500 cursor-wait'
               : isPayToDriver
               ? 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-emerald-600/30 active:scale-98'
+              : method === 'upi'
+              ? 'bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white shadow-purple-600/30 active:scale-98'
               : 'bg-gradient-to-r from-orange-500 via-orange-600 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 active:scale-98'
           }`}
         >
           {processing ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>{isPayToDriver ? 'Confirming Booking...' : 'Processing Payment...'}</span>
+              <span>{isPayToDriver ? 'Confirming Booking...' : 'Verifying & Confirming Booking...'}</span>
             </div>
           ) : success ? (
             <div className="flex items-center gap-2">
@@ -1085,6 +1189,11 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
             <>
               <Banknote className="w-4 h-4" />
               <span>Confirm Booking (Pay ₹{totalFare.toLocaleString('en-IN')} to Driver)</span>
+            </>
+          ) : method === 'upi' ? (
+            <>
+              <Smartphone className="w-4 h-4" />
+              <span>I Have Paid ₹{advancePayment.toLocaleString('en-IN')} via UPI • Confirm Booking</span>
             </>
           ) : (
             <>
