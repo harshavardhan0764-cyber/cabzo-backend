@@ -20,25 +20,24 @@ async function getTransporter(preferredPort = 465) {
 
   // Always use real Gmail SMTP credentials
   if (user && pass && pass.length >= 8) {
-    if (preferredPort === 'service_gmail' || !preferredPort) {
-      return nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user, pass },
-        family: 4,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        tls: { rejectUnauthorized: false }
-      });
+    let targetHost = host;
+    if (host === 'smtp.gmail.com') {
+      try {
+        const ips = await dns.promises.resolve4('smtp.gmail.com');
+        if (ips && ips.length > 0) {
+          targetHost = ips[0];
+        }
+      } catch (dnsErr) {
+        console.warn('[DNS Notice] Direct IPv4 resolution fallback:', dnsErr.message);
+      }
     }
 
     return nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host: targetHost,
       port: port,
       secure: port === 465,
       requireTLS: port === 587,
       auth: { user, pass },
-      family: 4,
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
@@ -671,46 +670,32 @@ Email: outstationcabsb@gmail.com
     html: htmlContent
   };
 
-  // Strategy 1: Attempt service: gmail (uses Google's optimized endpoints with IPv4)
-  try {
-    const transporterGmail = await getTransporter('service_gmail');
-    const info = await transporterGmail.sendMail(mailOptions);
-    console.log(`\n📧 [EMAIL OTP DISPATCHED via Gmail Service] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
-    return {
-      success: true,
-      messageId: info.messageId,
-      strategy: 'service_gmail'
-    };
-  } catch (errService) {
-    console.warn(`[Email OTP Warning] Gmail service failed (${errService.message}). Retrying via Port 465...`);
-  }
-
-  // Strategy 2: Attempt Port 465 (SSL IPv4)
+  // Strategy 1: Attempt Port 465 (Direct SSL IPv4)
   try {
     const transporter465 = await getTransporter(465);
     const info = await transporter465.sendMail(mailOptions);
-    console.log(`\n📧 [EMAIL OTP DISPATCHED via 465] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
+    console.log(`\n📧 [EMAIL OTP DISPATCHED via 465 IPv4] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
     return {
       success: true,
       messageId: info.messageId,
       port: 465
     };
   } catch (err465) {
-    console.warn(`[Email OTP Warning] Port 465 failed (${err465.message}). Retrying via Port 587 (STARTTLS)...`);
+    console.warn(`[Email OTP Warning] Port 465 IPv4 failed (${err465.message}). Retrying via Port 587 IPv4...`);
   }
 
-  // Strategy 2: Fallback to Port 587 (STARTTLS)
+  // Strategy 2: Fallback to Port 587 (Direct TLS IPv4)
   try {
     const transporter587 = await getTransporter(587);
     const info = await transporter587.sendMail(mailOptions);
-    console.log(`\n📧 [EMAIL OTP DISPATCHED via 587] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
+    console.log(`\n📧 [EMAIL OTP DISPATCHED via 587 IPv4] Verification code ${otp} sent to ${email} (MessageID: ${info.messageId})`);
     return {
       success: true,
       messageId: info.messageId,
       port: 587
     };
   } catch (err587) {
-    console.warn('[Email OTP Warning] Port 587 also failed:', err587.message);
+    console.warn('[Email OTP Warning] Port 587 IPv4 failed:', err587.message);
     return {
       success: false,
       error: err587.message

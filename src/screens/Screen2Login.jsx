@@ -439,19 +439,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
     setFormSuccess(`Verification code sent to ${cleanEmail}. Please check your inbox and spam folder.`);
     if (onShowToast) onShowToast(`Verification code sent to ${cleanEmail}`, 'success');
 
-    // 3. Dispatch to email via Google Firebase Identity Toolkit (Port 443 / HTTPS - guaranteed delivery)
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCvosKVilRX-0VcxHfNFbKFJFn1MrWl1jk';
-    fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requestType: 'EMAIL_SIGNIN',
-        email: cleanEmail,
-        continueUri: 'https://cabbazar-f6f2a.firebaseapp.com'
-      })
-    }).catch(() => {});
-
-    // 4. Save session hash & trigger backend email dispatch in background
+    // 3. Save session hash & trigger backend email dispatch in background
     (async () => {
       const liveExpires = Date.now() + 10 * 60 * 1000;
       const computedHash = await sha256Hex(`${cleanEmail}:${liveOtp}:cabbazar_otp_secure_salt_2026`);
@@ -488,18 +476,6 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
     setFormSuccess(`New verification code sent to ${cleanEmail}. Check your inbox!`);
     if (onShowToast) onShowToast(`New verification code sent to ${cleanEmail}`, 'success');
 
-    // Send via Google Firebase Identity Toolkit
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyCvosKVilRX-0VcxHfNFbKFJFn1MrWl1jk';
-    fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        requestType: 'EMAIL_SIGNIN',
-        email: cleanEmail,
-        continueUri: 'https://cabbazar-f6f2a.firebaseapp.com'
-      })
-    }).catch(() => {});
-
     // Background update
     (async () => {
       const liveExpires = Date.now() + 10 * 60 * 1000;
@@ -516,6 +492,7 @@ export default function Screen2Login({ onNavigate, onShowToast }) {
       } catch (_) {}
     })();
   };
+
 
   // ─── SKIP OTP & COMPLETE DIRECT REGISTRATION ──────────────────────────────
   const handleSkipOtpAndRegister = async () => {
