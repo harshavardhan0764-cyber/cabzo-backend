@@ -36,6 +36,7 @@ export const VEHICLE_CONFIGS = {
     tag: 'Economical & Popular',
     description: 'Maruti Dzire, Toyota Etios, Hyundai Aura',
     ratePerKm: 13,
+    roundTripRatePerKm: 7,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -57,6 +58,7 @@ export const VEHICLE_CONFIGS = {
     tag: 'Spacious & Comfortable',
     description: 'Maruti Suzuki Ertiga AC with extra boot space',
     ratePerKm: 18,
+    roundTripRatePerKm: 11,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -78,6 +80,7 @@ export const VEHICLE_CONFIGS = {
     tag: 'Executive Family Ride',
     description: 'Toyota Innova Crysta with Captain Seats',
     ratePerKm: 24,
+    roundTripRatePerKm: 15,
     extraKmRate: 12,
     minKmPerDay: 250,
     driverBataPerDay: 300,
@@ -100,9 +103,11 @@ export const VEHICLE_CONFIGS = {
     statusText: 'Presently Not Available',
     description: 'Force Traveller AC (Currently Not Available)',
     ratePerKm: 26,
+    roundTripRatePerKm: 18,
     extraKmRate: 12,
     minKmPerDay: 300,
     driverBataPerDay: 500,
+    driverBataMultiDay: 600,
     tollClass: 'MINIBUS_LCV',
     statePermitPerBorder: 350,
     capacity: 12,
@@ -423,18 +428,21 @@ export function calculateFare({
   // --- Base Fare Calculation ---
   let baseFare = 0;
   let chargedKm = billingKm;
+  const effectiveRatePerKm = isRoundTrip
+    ? (vehicle.roundTripRatePerKm || 7)
+    : (vehicle.ratePerKm || 13);
 
   if (isRoundTrip) {
     // Round Trip: Minimum billable km = numDays × minKmPerDay (250 km/day)
     // If actual round-trip km exceeds this threshold, user only pays for actual km!
     const minBillableKm = numDays * (vehicle.minKmPerDay || 250);
     chargedKm = Math.max(billingKm, minBillableKm);
-    baseFare = Math.round(chargedKm * vehicle.ratePerKm);
+    baseFare = Math.round(chargedKm * effectiveRatePerKm);
   } else {
     // One-Way: Minimum billable distance = 250 km
     const minOneWayKm = 250;
     chargedKm = Math.max(oneWayKm, minOneWayKm);
-    baseFare = Math.round(chargedKm * vehicle.ratePerKm);
+    baseFare = Math.round(chargedKm * effectiveRatePerKm);
   }
 
   // --- Roof Carrier / Extra Luggage Charge (+₹100) ---
@@ -455,7 +463,9 @@ export function calculateFare({
     vehicle,
     actualDistance: oneWayKm,       // Always one-way km for display
     chargedKm,                       // Km used for base fare billing
-    ratePerKm: vehicle.ratePerKm,
+    ratePerKm: effectiveRatePerKm,
+    oneWayRatePerKm: vehicle.ratePerKm,
+    roundTripRatePerKm: vehicle.roundTripRatePerKm || 7,
     extraKmRate,
     baseFare,
     numDays,

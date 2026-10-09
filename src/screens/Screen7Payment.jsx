@@ -29,6 +29,40 @@ import {
 } from '../utils/paymentApi';
 import ownerQrImg from '../assets/owner_phonepe_qr.jpg';
 
+const PhonePeLogo = () => (
+  <svg viewBox="0 0 48 48" className="w-6 h-6 mx-auto" fill="none">
+    <rect width="48" height="48" rx="12" fill="#5F259F"/>
+    <path d="M30 18H20.5C18.5 18 17 19.5 17 21.5V36" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+    <path d="M22 13V36" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+    <path d="M22 23H29C31.2 23 33 24.8 33 27C33 29.2 31.2 31 29 31H22" stroke="white" strokeWidth="3.5" strokeLinecap="round"/>
+  </svg>
+);
+
+const GPayLogo = () => (
+  <svg viewBox="0 0 48 48" className="w-6 h-6 mx-auto">
+    <rect width="48" height="48" rx="12" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.5"/>
+    <path fill="#4285F4" d="M31.6 24.2c0-.6-.05-1.2-.15-1.7H24v3.3h4.3c-.2 1-.7 1.8-1.5 2.4v2h2.5c1.4-1.3 2.3-3.3 2.3-6z"/>
+    <path fill="#34A853" d="M24 32c2.2 0 4-1.2 5-2.8l-2.5-2c-.7.5-1.5.8-2.5.8-2 0-3.6-1.3-4.2-3.1h-2.5v2C18.6 29.8 21.1 32 24 32z"/>
+    <path fill="#FBBC05" d="M19.8 24.9c-.2-.5-.3-1.1-.3-1.7s.1-1.2.3-1.7v-2h-2.5c-.6 1.1-.9 2.4-.9 3.7s.3 2.6.9 3.7l2.5-2z"/>
+    <path fill="#EA4335" d="M24 17.8c1.2 0 2.2.4 3 1.2l2.3-2.3C27.9 15.4 26.1 14.7 24 14.7c-2.9 0-5.4 1.7-6.7 4.1l2.5 2c.6-1.8 2.2-3 4.2-3z"/>
+  </svg>
+);
+
+const PaytmLogo = () => (
+  <svg viewBox="0 0 48 48" className="w-6 h-6 mx-auto" fill="none">
+    <rect width="48" height="48" rx="12" fill="#002E6E"/>
+    <text x="24" y="29" textAnchor="middle" fill="#00BAF2" fontSize="11" fontWeight="900" fontFamily="sans-serif">paytm</text>
+  </svg>
+);
+
+const BhimLogo = () => (
+  <svg viewBox="0 0 48 48" className="w-6 h-6 mx-auto" fill="none">
+    <rect width="48" height="48" rx="12" fill="#024D98"/>
+    <path d="M16 16L24 16L21 32L13 32Z" fill="#00A859"/>
+    <path d="M25 16L33 16L30 32L22 32Z" fill="#F37021"/>
+  </svg>
+);
+
 export default function Screen7Payment({ onNavigate, onShowToast }) {
   const { fareSummary, createBooking, bookingForm } = useBooking();
   const { currentUser } = useAuth();
@@ -82,91 +116,21 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
     : calculatedAdvance;
 
   // Dynamic amounts based on user preference:
-  const isPayToDriver = method === 'driver';
   const totalFare = grossTotal;
-  const advancePayment = isPayToDriver ? 0 : (payTollNow ? (baseAdvance + tollAmount) : baseAdvance);
-  const remainingAmount = isPayToDriver 
-    ? totalFare 
-    : (payTollNow ? Math.max(0, grossTotal - advancePayment) : Math.max(0, grossTotal - baseAdvance));
+  const advancePayment = payTollNow ? (baseAdvance + tollAmount) : baseAdvance;
+  const remainingAmount = payTollNow ? Math.max(0, grossTotal - advancePayment) : Math.max(0, grossTotal - baseAdvance);
 
   const pickupName = typeof bookingForm?.pickup === 'object' ? bookingForm.pickup.name : (bookingForm?.pickup || 'Pickup Location');
   const dropName = typeof bookingForm?.drop === 'object' ? bookingForm.drop.name : (bookingForm?.drop || 'Drop Location');
   const vehicleName = fareSummary?.vehicle?.name || bookingForm?.vehicleId || 'Outstation Cab';
 
-  // ─── UNIFIED PAYMENT FLOW (PAY TO DRIVER OR RAZORPAY ONLINE) ────────────────
+  // ─── UNIFIED ONLINE ADVANCE PAYMENT FLOW ──────────────────────────────────
   const handlePay = async (e) => {
     if (e) e.preventDefault();
     setErrorMessage(null);
     setProcessing(true);
 
     const prospectiveBookingId = `CB-${Math.floor(100000 + Math.random() * 900000)}`;
-
-    // ── CASE 1: PAY AFTER TRIP DIRECTLY TO DRIVER (ZERO ADVANCE) ──────────────
-    if (isPayToDriver) {
-      setProcessingStep('Confirming ride with driver assignment...');
-      try {
-        const createdBooking = createBooking({
-          paymentId: `CASH_${Date.now().toString().slice(-6)}`,
-          razorpayOrderId: 'PAY_AFTER_TRIP',
-          amount: 0,
-          method: 'PAY_TO_DRIVER',
-          userEmail: customerEmail.trim(),
-          payTollNow: false,
-          tollPaymentPreference: 'PAY_AFTER_TRIP',
-          tollAmount,
-          nhaiToll,
-          statePermitFee,
-          stateBorderCount,
-          totalFare,
-          balancePayable: totalFare
-        });
-
-        const confirmedId = typeof createdBooking === 'object' ? createdBooking.bookingId : prospectiveBookingId;
-
-        // Dispatch email notification
-        try {
-          await sendBookingEmailConfirmation({
-            bookingId: confirmedId,
-            userName: customerName,
-            customerName,
-            customerPhone,
-            userPhone: customerPhone,
-            customerEmail,
-            userEmail: customerEmail,
-            pickup: pickupName,
-            drop: dropName,
-            totalFare,
-            advancePaid: 0,
-            remainingAmount: totalFare,
-            paymentStatus: 'PAY TO DRIVER (Cash / UPI at Trip End)',
-            paymentId: 'PAY_AFTER_TRIP',
-            vehicleCategory: vehicleName,
-            tripType: bookingForm?.tripType,
-            pickupDate: bookingForm?.pickupDate,
-            pickupTime: bookingForm?.pickupTime,
-            tollAmount,
-            nhaiToll,
-            statePermitFee,
-            stateBorderCount,
-            payTollNow: false
-          });
-        } catch (_) {}
-
-        setSuccess(true);
-        setProcessing(false);
-        if (onShowToast) {
-          onShowToast(`✅ Booking Confirmed! Pay ₹${totalFare.toLocaleString('en-IN')} to driver.`, 'success');
-        }
-        setTimeout(() => {
-          onNavigate('BookingStatusScreen', { bookingId: confirmedId });
-        }, 500);
-        return;
-      } catch (err) {
-        setProcessing(false);
-        setErrorMessage(err.message || 'Could not create booking. Please try again.');
-        return;
-      }
-    }
 
     // ── CASE 2: DIRECT PHONEPE / UPI ADVANCE PAYMENT (OWNER QR / VPA) ─────────
     if (method === 'upi') {
@@ -842,10 +806,10 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
                   <div className="space-y-2.5">
                     <div className="grid grid-cols-4 gap-1.5">
                       {[
-                        { id: 'phonepe', label: 'PhonePe', icon: '🟣' },
-                        { id: 'gpay', label: 'GPay', icon: '🟢' },
-                        { id: 'paytm', label: 'Paytm', icon: '🔵' },
-                        { id: 'bhim', label: 'BHIM', icon: '🟠' }
+                        { id: 'phonepe', label: 'PhonePe', Logo: PhonePeLogo },
+                        { id: 'gpay', label: 'GPay', Logo: GPayLogo },
+                        { id: 'paytm', label: 'Paytm', Logo: PaytmLogo },
+                        { id: 'bhim', label: 'BHIM', Logo: BhimLogo }
                       ].map(app => (
                         <button
                           key={app.id}
@@ -855,14 +819,14 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
                             setUpiApp(app.id);
                             window.location.href = `upi://pay?pa=${BUSINESS_UPI_ID}&pn=${encodeURIComponent(BUSINESS_PAYEE_NAME)}&am=${advancePayment}&cu=INR&tn=CABZO%20Advance%20Booking`;
                           }}
-                          className={`p-2 rounded-xl border text-center text-[10px] font-black transition cursor-pointer ${
+                          className={`p-2 rounded-xl border text-center text-[10px] font-black transition cursor-pointer flex flex-col items-center justify-center gap-1 ${
                             upiApp === app.id 
-                              ? 'border-purple-500 bg-purple-100 text-purple-950 ring-2 ring-purple-300' 
+                              ? 'border-purple-500 bg-purple-100 text-purple-950 ring-2 ring-purple-300 shadow-xs' 
                               : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="text-base">{app.icon}</div>
-                          <div className="mt-0.5">{app.label}</div>
+                          <app.Logo />
+                          <span className="font-bold">{app.label}</span>
                         </button>
                       ))}
                     </div>
@@ -1084,39 +1048,6 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
               </div>
             )}
           </div>
-
-          {/* Option 4: Pay After Trip directly to Driver */}
-          <div
-            onClick={() => setMethod('driver')}
-            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all duration-200 ${
-              method === 'driver'
-                ? 'border-emerald-500 bg-emerald-50/70 ring-2 ring-emerald-400/20 shadow-xs'
-                : 'border-slate-200 bg-white hover:border-emerald-300'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold">
-                  <Banknote className="w-5 h-5 text-emerald-700" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-black text-slate-900">💵 Pay Later to Driver</h4>
-                    <span className="text-[9px] bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.2 rounded-md font-extrabold uppercase">
-                      Zero Advance
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Pay ₹{totalFare.toLocaleString('en-IN')} directly to your driver at trip end (Cash / UPI)</p>
-                </div>
-              </div>
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                method === 'driver' ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300'
-              }`}>
-                {method === 'driver' && <div className="w-2 h-2 rounded-full bg-white" />}
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Instant Email Notification Banner */}
@@ -1168,8 +1099,6 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
               ? 'bg-emerald-600 text-white'
               : processing
               ? 'bg-slate-200 text-slate-500 cursor-wait'
-              : isPayToDriver
-              ? 'bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-emerald-600/30 active:scale-98'
               : method === 'upi'
               ? 'bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 hover:from-purple-800 hover:to-indigo-800 text-white shadow-purple-600/30 active:scale-98'
               : 'bg-gradient-to-r from-orange-500 via-orange-600 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/30 active:scale-98'
@@ -1178,18 +1107,13 @@ export default function Screen7Payment({ onNavigate, onShowToast }) {
           {processing ? (
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>{isPayToDriver ? 'Confirming Booking...' : 'Verifying & Confirming Booking...'}</span>
+              <span>Verifying & Confirming Booking...</span>
             </div>
           ) : success ? (
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-white" />
               <span>Booking Confirmed ✓</span>
             </div>
-          ) : isPayToDriver ? (
-            <>
-              <Banknote className="w-4 h-4" />
-              <span>Confirm Booking (Pay ₹{totalFare.toLocaleString('en-IN')} to Driver)</span>
-            </>
           ) : method === 'upi' ? (
             <>
               <Smartphone className="w-4 h-4" />

@@ -201,7 +201,7 @@ export default function Screen6Fare({ onNavigate, onShowToast }) {
                 <span className="block text-slate-900 font-bold">
                   Base Fare ({chargedKm} km{bookingForm.tripType === 'roundtrip' ? ` • ${actualDistance} km × 2` : ''})
                 </span>
-                <span className="text-[10px] text-slate-500">₹{ratePerKm}/km • {vehicle?.fullName || 'Standard AC'}</span>
+                <span className="text-[10px] text-slate-500">₹{ratePerKm}/km ({bookingForm.tripType === 'roundtrip' ? 'Return Rate' : 'One-Way'}) • {vehicle?.fullName || 'Standard AC'}</span>
               </div>
               <span className="font-extrabold text-slate-900 text-sm">₹{baseFare.toLocaleString('en-IN')}</span>
             </div>
@@ -328,7 +328,7 @@ export default function Screen6Fare({ onNavigate, onShowToast }) {
               <div className="flex justify-between items-center">
                 <div>
                   <span className="font-bold text-slate-900 block">1. Base Fare</span>
-                  <span className="text-[10px] text-slate-500">{chargedKm} km @ ₹{ratePerKm}/km ({vehicle?.name}){bookingForm.tripType === 'roundtrip' ? ` (${actualDistance} km × 2)` : ''}</span>
+                  <span className="text-[10px] text-slate-500">{chargedKm} km @ ₹{ratePerKm}/km ({bookingForm.tripType === 'roundtrip' ? 'Return Rate' : 'One-Way'}) ({vehicle?.name}){bookingForm.tripType === 'roundtrip' ? ` (${actualDistance} km × 2)` : ''}</span>
                 </div>
                 <span className="font-black text-slate-900">₹{baseFare.toLocaleString('en-IN')}</span>
               </div>

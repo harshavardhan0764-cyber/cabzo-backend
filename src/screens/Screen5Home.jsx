@@ -47,6 +47,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { calculateRouteDistance } from '../utils/distanceService';
 import { getCurrentDeviceLocationGoogle } from '../utils/googleLocationService';
+import { isBengaluruLocation } from '../utils/locationService';
 import { VEHICLE_CONFIGS, calculateFare } from '../utils/fareCalculator';
 
 // Realistic Destination Photos & Vehicle Hero
@@ -265,6 +266,10 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
     try {
       if (onShowToast) onShowToast('Detecting GPS location...', 'info');
       const gpsPlace = await getCurrentDeviceLocationGoogle();
+      if (!isBengaluruLocation(gpsPlace)) {
+        if (onShowToast) onShowToast('CABZO pickups are currently available exclusively from Bengaluru (Bangalore).', 'warning');
+        return;
+      }
       updateBookingForm({
         pickup: gpsPlace.name,
         pickupLocation: gpsPlace
@@ -277,6 +282,10 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
 
   // Swap pickup & drop
   const handleSwap = () => {
+    if (!isBengaluruLocation(bookingForm.dropLocation || bookingForm.drop)) {
+      if (onShowToast) onShowToast('Pickup location must be within Bengaluru (Bangalore).', 'warning');
+      return;
+    }
     const tempPickup = bookingForm.pickup;
     const tempPickupLoc = bookingForm.pickupLocation;
     updateBookingForm({
@@ -605,14 +614,19 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-black uppercase tracking-wider block ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
-                    PICKUP LOCATION
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[10px] font-black uppercase tracking-wider block ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                      PICKUP LOCATION
+                    </span>
+                    <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded border border-emerald-300">
+                      Bengaluru Only
+                    </span>
+                  </div>
                   <button
                     type="button"
                     onClick={handleUseCurrentLocationForPickup}
                     className="text-[9px] text-orange-500 hover:text-orange-600 font-bold flex items-center gap-1 bg-orange-500/10 px-2 py-0.5 rounded-full border border-orange-500/30 cursor-pointer"
-                    title="Use GPS current location"
+                    title="Use GPS current location in Bengaluru"
                   >
                     <Crosshair className="w-2.5 h-2.5" />
                     <span>GPS</span>
@@ -629,7 +643,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
                   </>
                 ) : (
                   <p className={`text-xs font-bold transition mt-0.5 ${isDark ? 'text-slate-400 group-hover:text-white' : 'text-slate-500 group-hover:text-slate-900'}`}>
-                    Search city, town, airport, railway station, address in India...
+                    Select address, airport, tech park, station in Bengaluru...
                   </p>
                 )}
               </div>
@@ -1252,7 +1266,7 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
                       <span className={`absolute top-2 right-2 text-[10px] font-black px-2 py-0.5 rounded-full backdrop-blur-md shadow-xs ${
                         isDark ? 'bg-slate-950/80 text-orange-400 border border-orange-500/30' : 'bg-white/95 text-orange-600 border border-orange-200'
                       }`}>
-                        ₹{veh.ratePerKm}/km
+                        ₹{isRT ? (veh.roundTripRatePerKm || 7) : veh.ratePerKm}/km {isRT ? '• Return' : '• One-Way'}
                       </span>
                     ) : (
                       <span className="absolute top-2 right-2 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-950/90 text-rose-300 border border-rose-500/40 backdrop-blur-md">
@@ -1576,10 +1590,11 @@ export default function Screen5Home({ onNavigate, onOpenMenu, onShowToast }) {
         onClose={() => setMapPickerTarget(null)}
         onSelectLocation={handleLocationSelected}
         title={
-          mapPickerTarget === 'pickup' ? 'Select Pickup Location' :
+          mapPickerTarget === 'pickup' ? 'Select Pickup Location (Bengaluru Only)' :
           mapPickerTarget === 'drop' ? 'Select Destination' :
           'Select Intermediate Stop'
         }
+        isPickup={mapPickerTarget === 'pickup'}
         initialLocation={
           mapPickerTarget === 'pickup' ? bookingForm.pickupLocation :
           mapPickerTarget === 'drop' ? bookingForm.dropLocation :
